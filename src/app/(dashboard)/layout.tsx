@@ -1,9 +1,10 @@
-import React from 'react'
+import React from 'react';
+import { AppShell } from '@/src/components/layout/app-shell';
 
-const layout = () => {
-  return (
-    <div>layout</div>
-  )
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <AppShell>{children}</AppShell>;
 }
-
-export default layout
