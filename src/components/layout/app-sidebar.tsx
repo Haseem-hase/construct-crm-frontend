@@ -22,6 +22,13 @@ const adminNavigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
+const platformNavigation = [
+  { name: 'Platform Dashboard', href: '/super-admin', icon: LayoutDashboard },
+  { name: 'Organizations', href: '/super-admin/organizations', icon: FolderOpen },
+  { name: 'Users', href: '/super-admin/users', icon: Users },
+  { name: 'System Settings', href: '/super-admin/settings', icon: Settings },
+];
+
 export function AppSidebar() {
   const pathname = usePathname();
 
@@ -70,6 +77,15 @@ export function AppSidebar() {
           </h3>
         </div>
         {renderNavItems(adminNavigation)}
+
+        <div className="my-6 border-t border-neutral-100" />
+
+        <div className="px-3 mb-3">
+          <h3 className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
+            Platform (Super Admin)
+          </h3>
+        </div>
+        {renderNavItems(platformNavigation)}
       </div>
 
       <div className="p-4 border-t border-neutral-200/60">
