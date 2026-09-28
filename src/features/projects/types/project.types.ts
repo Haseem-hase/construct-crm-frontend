@@ -1,5 +1,12 @@
 export type ProjectStatus = 'Planning' | 'Active' | 'Completed' | 'On Hold';
 
+export interface ProjectImage {
+  id: string;
+  url: string;
+  alt?: string;
+  isCover?: boolean;
+}
+
 export interface Project {
   id: string;
   projectCode: string;
@@ -11,5 +18,7 @@ export interface Project {
   startDate: string;
   plannedEndDate: string;
   description?: string;
+  budget?: number;
+  images?: ProjectImage[];
   createdAt: string;
 }

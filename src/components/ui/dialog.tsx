@@ -8,9 +8,10 @@ export interface DialogProps {
   title?: React.ReactNode;
   description?: React.ReactNode;
   children: React.ReactNode;
+  panelClassName?: string;
 }
 
-export function Dialog({ open, onOpenChange, title, description, children }: DialogProps) {
+export function Dialog({ open, onOpenChange, title, description, children, panelClassName }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,7 +60,7 @@ export function Dialog({ open, onOpenChange, title, description, children }: Dia
         aria-labelledby={title ? 'dialog-title' : undefined}
         aria-describedby={description ? 'dialog-description' : undefined}
         tabIndex={-1}
-        className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 sm:p-8 outline-none"
+        className={panelClassName || "relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 sm:p-8 outline-none"}
       >
         {(title || description) && (
           <div className="mb-6">
