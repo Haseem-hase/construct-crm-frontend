@@ -111,13 +111,27 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => router.push(`/customers/${customer.customerCode.toLowerCase()}`)}>View</Button>
-                    <Button variant="ghost" size="sm" onClick={() => router.push(`/customers/${customer.customerCode.toLowerCase()}/edit`)}>Edit</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-16"
+                      onClick={() => router.push(`/customers/${customer.customerCode.toLowerCase()}`)}
+                    >
+                      View
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-16"
+                      onClick={() => router.push(`/customers/${customer.customerCode.toLowerCase()}/edit`)}
+                    >
+                      Edit
+                    </Button>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => setTargetCustomer(customer)}
-                      className={customer.status === 'Active' ? 'text-red-600 hover:text-red-700 hover:bg-red-50' : 'text-neutral-900'}
+                      className={`w-24 ${customer.status === 'Active' ? 'text-red-600 hover:text-red-700 hover:bg-red-50' : 'text-neutral-900'}`}
                     >
                       {customer.status === 'Active' ? 'Deactivate' : 'Activate'}
                     </Button>
