@@ -15,6 +15,7 @@ export default function CustomersPage() {
   const [typeFilter, setTypeFilter] = useState<CustomerType | 'ALL'>('ALL');
   const [statusFilter, setStatusFilter] = useState<CustomerStatus | 'ALL'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
+  const [localCustomers, setLocalCustomers] = useState(mockCustomers);
 
   const handleReset = () => {
     setSearchQuery('');
@@ -39,7 +40,7 @@ export default function CustomersPage() {
   };
 
   const filteredCustomers = useMemo(() => {
-    return mockCustomers.filter(customer => {
+    return localCustomers.filter(customer => {
       // Status filter
       if (statusFilter !== 'ALL' && customer.status !== statusFilter) {
         return false;
@@ -63,7 +64,11 @@ export default function CustomersPage() {
 
       return true;
     });
-  }, [searchQuery, typeFilter, statusFilter]);
+  }, [searchQuery, typeFilter, statusFilter, localCustomers]);
+
+  const handleUpdateStatus = (id: string, newStatus: CustomerStatus) => {
+    setLocalCustomers(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
+  };
 
   const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE));
   
@@ -95,8 +100,9 @@ export default function CustomersPage() {
       
       <CustomerTable 
         customers={paginatedCustomers} 
-        allCustomers={mockCustomers}
+        allCustomers={localCustomers}
         onClearFilters={handleReset}
+        onUpdateStatus={handleUpdateStatus}
       />
 
       {/* Pagination UI */}
