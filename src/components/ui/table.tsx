@@ -2,7 +2,7 @@ import React, { HTMLAttributes, TdHTMLAttributes, ThHTMLAttributes, forwardRef }
 
 export const Table = forwardRef<HTMLTableElement, HTMLAttributes<HTMLTableElement>>(
   ({ className = '', ...props }, ref) => (
-    <div className="w-full overflow-auto">
+    <div className="w-full overflow-x-auto min-w-0">
       <table
         ref={ref}
         className={`w-full text-sm text-left ${className}`}
