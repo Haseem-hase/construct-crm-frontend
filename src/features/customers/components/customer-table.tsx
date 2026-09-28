@@ -13,6 +13,8 @@ interface CustomerTableProps {
   allCustomers: Customer[];
   onClearFilters: () => void;
   onUpdateStatus: (id: string, status: CustomerStatus) => void;
+  currentPage?: number;
+  itemsPerPage?: number;
 }
 
 function formatDate(isoString: string) {
@@ -28,7 +30,7 @@ function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
-export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdateStatus }: CustomerTableProps) {
+export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdateStatus, currentPage = 1, itemsPerPage = 10 }: CustomerTableProps) {
   const router = useRouter();
   const [targetCustomer, setTargetCustomer] = React.useState<Customer | null>(null);
 
@@ -56,6 +58,7 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-[60px] text-center">S.No</TableHead>
             <TableHead>Customer</TableHead>
             <TableHead>Code</TableHead>
             <TableHead>Type</TableHead>
@@ -67,7 +70,8 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
           </TableRow>
         </TableHeader>
         <TableBody>
-          {customers.map(customer => {
+          {customers.map((customer, index) => {
+            const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
             let parentName = '—';
             if (customer.parentCustomerId) {
               const parent = allCustomers.find(c => c.id === customer.parentCustomerId);
@@ -78,6 +82,9 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
 
             return (
               <TableRow key={customer.id}>
+                <TableCell className="text-center text-neutral-500 text-[13px] font-medium">
+                  {serialNumber}
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-medium text-neutral-900">{customer.name}</span>

@@ -103,6 +103,8 @@ export default function CustomersPage() {
         allCustomers={localCustomers}
         onClearFilters={handleReset}
         onUpdateStatus={handleUpdateStatus}
+        currentPage={validCurrentPage}
+        itemsPerPage={ITEMS_PER_PAGE}
       />
 
       {/* Pagination UI */}
