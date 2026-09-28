@@ -22,7 +22,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </MobileSidebar>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col md:pl-64 min-h-screen">
+      <div className="flex-1 flex flex-col md:pl-64 min-h-screen min-w-0">
         <AppHeader onMenuClick={() => setIsMobileOpen(true)} />
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-7xl">

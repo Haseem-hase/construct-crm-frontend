@@ -38,8 +38,8 @@ export function CustomerFilters({
   ];
 
   return (
-    <div className="flex flex-col md:flex-row flex-wrap gap-4 mb-6">
-      <div className="flex-1 min-w-[200px]">
+    <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-4 mb-6 items-start">
+      <div className="min-w-0">
         <Input 
           type="search"
           placeholder="Search customers..." 
@@ -48,7 +48,7 @@ export function CustomerFilters({
           aria-label="Search customers"
         />
       </div>
-      <div className="w-full md:w-48">
+      <div className="min-w-0 md:w-48">
         <Select 
           value={typeFilter} 
           onChange={(val) => onTypeFilterChange(val as CustomerType | 'ALL')}
@@ -56,7 +56,7 @@ export function CustomerFilters({
           aria-label="Filter by customer type"
         />
       </div>
-      <div className="w-full md:w-48">
+      <div className="min-w-0 md:w-48">
         <Select 
           value={statusFilter} 
           onChange={(val) => onStatusFilterChange(val as CustomerStatus | 'ALL')}
