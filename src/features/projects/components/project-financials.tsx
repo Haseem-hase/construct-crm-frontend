@@ -1,9 +1,11 @@
 import React from 'react';
 import { Project } from '../types/project.types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
+import { InlineEdit } from '@/src/components/ui/inline-edit';
 
 interface ProjectFinancialsProps {
   project: Project;
+  onUpdate?: (updates: Partial<Project>) => void;
 }
 
 function formatCurrency(amount?: number) {
@@ -25,7 +27,7 @@ function DetailItem({ label, children }: { label: string, children: React.ReactN
   );
 }
 
-export function ProjectFinancials({ project }: ProjectFinancialsProps) {
+export function ProjectFinancials({ project, onUpdate }: ProjectFinancialsProps) {
   const formattedBudget = formatCurrency(project.budget);
 
   return (
@@ -36,7 +38,18 @@ export function ProjectFinancials({ project }: ProjectFinancialsProps) {
       <CardContent>
         <div className="flex flex-col gap-y-6">
           <DetailItem label="Budget">
-            {formattedBudget ? formattedBudget : <span className="text-neutral-400 italic">Not provided</span>}
+            <InlineEdit
+              editor="number"
+              value={project.budget?.toString() || ''}
+              onSave={(val) => {
+                const num = parseFloat(val);
+                if (isNaN(num) || num < 0) return false;
+                if (onUpdate) onUpdate({ budget: num });
+              }}
+              displayValue={
+                formattedBudget ? formattedBudget : <span className="text-neutral-400 italic">Not provided</span>
+              }
+            />
           </DetailItem>
         </div>
       </CardContent>

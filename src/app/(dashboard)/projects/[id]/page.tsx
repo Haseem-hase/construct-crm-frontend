@@ -1,8 +1,9 @@
 'use client';
 
-import React, { use } from 'react';
+import React, { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { mockProjects } from '@/src/features/projects/data/projects.mock';
+import { Project } from '@/src/features/projects/types/project.types';
 import { ProjectDetailsHeader } from '@/src/features/projects/components/project-details-header';
 import { ProjectOverview } from '@/src/features/projects/components/project-overview';
 import { ProjectCustomer } from '@/src/features/projects/components/project-customer';
@@ -22,9 +23,11 @@ export default function ProjectDetailsPage({ params }: ProjectDetailsPageProps) 
   const resolvedParams = use(params);
   const id = resolvedParams.id;
 
-  const project = mockProjects.find(
+  const initialProject = mockProjects.find(
     p => p.id === id || p.projectCode === id
   );
+
+  const [project, setProject] = useState<Project | undefined>(initialProject);
 
   if (!project) {
     return (
@@ -65,13 +68,13 @@ export default function ProjectDetailsPage({ params }: ProjectDetailsPageProps) 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 flex flex-col gap-6">
-            <ProjectOverview project={project} />
-            <ProjectPlanning project={project} />
+            <ProjectOverview project={project} onUpdate={(updates) => setProject(p => p ? { ...p, ...updates } : p)} />
+            <ProjectPlanning project={project} onUpdate={(updates) => setProject(p => p ? { ...p, ...updates } : p)} />
           </div>
           
           <div className="flex flex-col gap-6">
-            <ProjectCustomer project={project} />
-            <ProjectFinancials project={project} />
+            <ProjectCustomer project={project} onUpdate={(updates) => setProject(p => p ? { ...p, ...updates } : p)} />
+            <ProjectFinancials project={project} onUpdate={(updates) => setProject(p => p ? { ...p, ...updates } : p)} />
           </div>
         </div>
 

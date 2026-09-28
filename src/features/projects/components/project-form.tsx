@@ -85,7 +85,11 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
       progress
     });
 
-    router.push('/projects');
+    if (mode === 'edit' && initialData?.id) {
+      router.push(`/projects/${initialData.id}`);
+    } else {
+      router.push('/projects');
+    }
   };
 
   return (

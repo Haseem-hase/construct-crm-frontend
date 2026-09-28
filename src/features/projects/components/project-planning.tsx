@@ -1,9 +1,11 @@
 import React from 'react';
 import { Project } from '../types/project.types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
+import { InlineEdit } from '@/src/components/ui/inline-edit';
 
 interface ProjectPlanningProps {
   project: Project;
+  onUpdate?: (updates: Partial<Project>) => void;
 }
 
 function formatDate(isoString?: string) {
@@ -25,7 +27,7 @@ function DetailItem({ label, children }: { label: string, children: React.ReactN
   );
 }
 
-export function ProjectPlanning({ project }: ProjectPlanningProps) {
+export function ProjectPlanning({ project, onUpdate }: ProjectPlanningProps) {
   const formattedStart = formatDate(project.startDate);
   const formattedEnd = formatDate(project.plannedEndDate);
 
@@ -37,11 +39,37 @@ export function ProjectPlanning({ project }: ProjectPlanningProps) {
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
           <DetailItem label="Start Date">
-            {formattedStart ? formattedStart : <span className="text-neutral-400 italic">Not provided</span>}
+            <InlineEdit
+              editor="date"
+              value={project.startDate?.split('T')[0] || ''}
+              onSave={(val) => {
+                const newDate = val ? new Date(val).toISOString() : '';
+                if (newDate && project.plannedEndDate && new Date(newDate) > new Date(project.plannedEndDate)) {
+                  return false;
+                }
+                if (onUpdate) onUpdate({ startDate: newDate });
+              }}
+              displayValue={
+                formattedStart ? formattedStart : <span className="text-neutral-400 italic">Not provided</span>
+              }
+            />
           </DetailItem>
           
           <DetailItem label="Planned End Date">
-            {formattedEnd ? formattedEnd : <span className="text-neutral-400 italic">Not provided</span>}
+            <InlineEdit
+              editor="date"
+              value={project.plannedEndDate?.split('T')[0] || ''}
+              onSave={(val) => {
+                const newDate = val ? new Date(val).toISOString() : '';
+                if (newDate && project.startDate && new Date(project.startDate) > new Date(newDate)) {
+                  return false;
+                }
+                if (onUpdate) onUpdate({ plannedEndDate: newDate });
+              }}
+              displayValue={
+                formattedEnd ? formattedEnd : <span className="text-neutral-400 italic">Not provided</span>
+              }
+            />
           </DetailItem>
         </div>
       </CardContent>

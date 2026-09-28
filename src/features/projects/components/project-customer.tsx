@@ -2,9 +2,11 @@ import React from 'react';
 import { Project } from '../types/project.types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { mockCustomers } from '@/src/features/customers/data/customers.mock';
+import { InlineEdit } from '@/src/components/ui/inline-edit';
 
 interface ProjectCustomerProps {
   project: Project;
+  onUpdate?: (updates: Partial<Project>) => void;
 }
 
 function DetailItem({ label, children }: { label: string, children: React.ReactNode }) {
@@ -16,9 +18,14 @@ function DetailItem({ label, children }: { label: string, children: React.ReactN
   );
 }
 
-export function ProjectCustomer({ project }: ProjectCustomerProps) {
+export function ProjectCustomer({ project, onUpdate }: ProjectCustomerProps) {
   // Resolve customer details from mock data
   const customer = mockCustomers.find(c => c.id === project.customerId);
+
+  const customerOptions = mockCustomers.map(c => ({
+    value: c.id,
+    label: c.name
+  }));
 
   return (
     <Card>
@@ -28,7 +35,25 @@ export function ProjectCustomer({ project }: ProjectCustomerProps) {
       <CardContent>
         <div className="flex flex-col gap-y-6">
           <DetailItem label="Customer Name">
-            <span className="font-medium">{project.customerName}</span>
+            <InlineEdit
+              editor="select"
+              options={customerOptions}
+              value={project.customerId}
+              onSave={(val) => {
+                if (!val) return false;
+                if (onUpdate) {
+                  const newCust = mockCustomers.find(c => c.id === val);
+                  if (newCust) {
+                    onUpdate({ customerId: val, customerName: newCust.name });
+                  } else {
+                    return false;
+                  }
+                }
+              }}
+              displayValue={
+                <span className="font-medium">{project.customerName}</span>
+              }
+            />
           </DetailItem>
           
           {customer ? (

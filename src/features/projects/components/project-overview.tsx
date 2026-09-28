@@ -3,9 +3,12 @@ import { Project } from '../types/project.types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { Badge } from '@/src/components/ui/badge';
 import { Progress } from '@/src/components/ui/progress';
+import { InlineEdit } from '@/src/components/ui/inline-edit';
+import { ProjectStatus } from '../types/project.types';
 
 interface ProjectOverviewProps {
   project: Project;
+  onUpdate?: (updates: Partial<Project>) => void;
 }
 
 function formatDate(isoString: string) {
@@ -36,7 +39,14 @@ function DetailItem({ label, children }: { label: string, children: React.ReactN
   );
 }
 
-export function ProjectOverview({ project }: ProjectOverviewProps) {
+export function ProjectOverview({ project, onUpdate }: ProjectOverviewProps) {
+  const statusOptions = [
+    { value: 'Planning', label: 'Planning' },
+    { value: 'Active', label: 'Active' },
+    { value: 'Completed', label: 'Completed' },
+    { value: 'On Hold', label: 'On Hold' },
+  ];
+
   return (
     <Card>
       <CardHeader>
@@ -45,7 +55,13 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
           <DetailItem label="Project Name">
-            {project.name}
+            <InlineEdit 
+              value={project.name}
+              onSave={(val) => {
+                if (!val.trim()) return false;
+                if (onUpdate) onUpdate({ name: val });
+              }}
+            />
           </DetailItem>
           
           <DetailItem label="Project Code">
@@ -53,13 +69,32 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
           </DetailItem>
 
           <DetailItem label="Status">
-            <Badge variant={getStatusVariant(project.status)}>
-              {project.status}
-            </Badge>
+            <InlineEdit
+              editor="select"
+              options={statusOptions}
+              value={project.status}
+              onSave={(val) => onUpdate && onUpdate({ status: val as ProjectStatus })}
+              displayValue={
+                <Badge variant={getStatusVariant(project.status)}>
+                  {project.status}
+                </Badge>
+              }
+            />
           </DetailItem>
 
           <DetailItem label="Progress">
-            <Progress value={project.progress} showValue className="w-full max-w-[200px]" />
+            <InlineEdit
+              editor="number"
+              value={project.progress.toString()}
+              onSave={(val) => {
+                const num = parseInt(val, 10);
+                if (isNaN(num) || num < 0 || num > 100) return false;
+                if (onUpdate) onUpdate({ progress: num });
+              }}
+              displayValue={
+                <Progress value={project.progress} showValue className="w-full max-w-[200px]" />
+              }
+            />
           </DetailItem>
 
           <DetailItem label="Created Date">
@@ -68,11 +103,18 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
 
           <div className="sm:col-span-2">
             <DetailItem label="Description">
-              {project.description ? (
-                <p className="text-neutral-700 whitespace-pre-wrap">{project.description}</p>
-              ) : (
-                <span className="text-neutral-400 italic">Not provided</span>
-              )}
+              <InlineEdit
+                editor="textarea"
+                value={project.description || ''}
+                onSave={(val) => onUpdate && onUpdate({ description: val })}
+                displayValue={
+                  project.description ? (
+                    <p className="text-neutral-700 whitespace-pre-wrap">{project.description}</p>
+                  ) : (
+                    <span className="text-neutral-400 italic">Not provided</span>
+                  )
+                }
+              />
             </DetailItem>
           </div>
         </div>
