@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { Customer } from '../types/customer.types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/components/ui/table';
 import { Badge } from '@/src/components/ui/badge';
@@ -25,6 +26,7 @@ function capitalize(str: string) {
 }
 
 export function CustomerTable({ customers, allCustomers, onClearFilters }: CustomerTableProps) {
+  const router = useRouter();
   if (customers.length === 0) {
     return (
       <Card className="flex flex-col items-center justify-center py-16 px-4 text-center">
@@ -97,7 +99,7 @@ export function CustomerTable({ customers, allCustomers, onClearFilters }: Custo
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => {}}>View</Button>
+                    <Button variant="ghost" size="sm" onClick={() => router.push(`/customers/${customer.customerCode.toLowerCase()}`)}>View</Button>
                     <Button variant="ghost" size="sm" onClick={() => {}}>Edit</Button>
                   </div>
                 </TableCell>

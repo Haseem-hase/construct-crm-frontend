@@ -8,7 +8,10 @@ export interface Customer {
   type: CustomerType;
   email: string;
   phone: string;
+  alternativePhone?: string;
+  country?: string;
   city: string;
+  address?: string;
   status: CustomerStatus;
   parentCustomerId?: string;
   createdAt: string;

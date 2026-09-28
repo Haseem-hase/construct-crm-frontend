@@ -1,0 +1,52 @@
+'use client';
+
+import React, { use } from 'react';
+import { useRouter } from 'next/navigation';
+import { mockCustomers } from '@/src/features/customers/data/customers.mock';
+import { CustomerDetailsHeader } from '@/src/features/customers/components/customer-details-header';
+import { CustomerOverview } from '@/src/features/customers/components/customer-overview';
+import { CustomerContactInformation } from '@/src/features/customers/components/customer-contact-information';
+import { CustomerAddress } from '@/src/features/customers/components/customer-address';
+import { CustomerHierarchy } from '@/src/features/customers/components/customer-hierarchy';
+import { Button } from '@/src/components/ui/button';
+
+export default function CustomerDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const router = useRouter();
+  
+  const customer = mockCustomers.find(
+    c => c.id === resolvedParams.id || c.customerCode.toLowerCase() === resolvedParams.id.toLowerCase()
+  );
+
+  if (!customer) {
+    return (
+      <div className="w-full mx-auto pb-8 min-w-0 flex flex-col items-center justify-center pt-24">
+        <h1 className="text-2xl font-semibold text-neutral-900 mb-2">Customer not found</h1>
+        <p className="text-neutral-500 mb-6">We couldn&apos;t find the customer you&apos;re looking for.</p>
+        <Button variant="outline" onClick={() => router.push('/customers')}>
+          Back to Customers
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full mx-auto pb-8 min-w-0">
+      <CustomerDetailsHeader 
+        name={customer.name} 
+        code={customer.customerCode} 
+        status={customer.status} 
+      />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
+        <CustomerOverview customer={customer} />
+        <CustomerContactInformation customer={customer} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
+        <CustomerAddress customer={customer} />
+        <CustomerHierarchy customer={customer} />
+      </div>
+    </div>
+  );
+}
