@@ -1,0 +1,75 @@
+import { SuperAdminDashboardData } from '../types/super-admin.types';
+
+export const mockSuperAdminData: SuperAdminDashboardData = {
+  summary: {
+    totalOrganizations: 128,
+    activeOrganizations: 114,
+    totalUsers: 2846,
+    activeUsers: 2531,
+    orgsGrowth: '+8 this month',
+    activeOrgsPercent: '89% of organizations',
+    usersGrowth: '+124 this month',
+    activeUsersPercent: '89% active',
+  },
+  organizations: [
+    { id: 'o1', name: 'ABC Construction', users: 42, projects: 18, labour: 126, status: 'Active', created: 'Sep 18, 2026' },
+    { id: 'o2', name: 'Riyadh Builders', users: 28, projects: 11, labour: 74, status: 'Active', created: 'Sep 14, 2026' },
+    { id: 'o3', name: 'Al Noor Contracting', users: 19, projects: 7, labour: 43, status: 'Active', created: 'Sep 09, 2026' },
+    { id: 'o4', name: 'Saudi Infrastructure Co.', users: 64, projects: 29, labour: 218, status: 'Active', created: 'Aug 28, 2026' },
+    { id: 'o5', name: 'Modern Build Group', users: 13, projects: 5, labour: 31, status: 'Suspended', created: 'Aug 21, 2026' },
+  ],
+  growth: [
+    { month: 'Jan', value: 8 },
+    { month: 'Feb', value: 12 },
+    { month: 'Mar', value: 15 },
+    { month: 'Apr', value: 19 },
+    { month: 'May', value: 23 },
+    { month: 'Jun', value: 28 },
+    { month: 'Jul', value: 31 },
+    { month: 'Aug', value: 37 },
+    { month: 'Sep', value: 42 },
+  ],
+  userStats: {
+    total: 2846,
+    active: 2531,
+    inactive: 315,
+    recentlyRegistered: 124,
+  },
+  recentUsers: [
+    { id: 'u1', name: 'Ahmed Mohammed', email: 'ahmed@example.com', organization: 'ABC Construction', role: 'Organization Owner', joined: 'Sep 26, 2026', status: 'Active' },
+    { id: 'u2', name: 'Omar Hassan', email: 'omar@example.com', organization: 'Riyadh Builders', role: 'Project Manager', joined: 'Sep 25, 2026', status: 'Active' },
+    { id: 'u3', name: 'Mohammed Ali', email: 'mohammed@example.com', organization: 'Al Noor Contracting', role: 'Site Manager', joined: 'Sep 24, 2026', status: 'Active' },
+  ],
+  activity: [
+    { id: 'a1', title: 'New organization registered', description: 'ABC Construction joined ConstructCRM', timeAgo: '2 minutes ago' },
+    { id: 'a2', title: 'New user created', description: 'Ahmed Mohammed joined Riyadh Builders', timeAgo: '18 minutes ago' },
+    { id: 'a3', title: 'Organization status changed', description: 'Modern Build Group was suspended', timeAgo: '1 hour ago' },
+    { id: 'a4', title: 'Global role updated', description: 'Project Manager permissions were updated', timeAgo: '3 hours ago' },
+    { id: 'a5', title: 'New organization registered', description: 'Saudi Infrastructure Co. joined ConstructCRM', timeAgo: '5 hours ago' },
+  ],
+  rolesStats: {
+    totalRoles: 6,
+    totalPermissions: 42,
+  },
+  roles: [
+    { id: 'r1', name: 'Organization Owner', organizationsUsing: 114, status: 'Active' },
+    { id: 'r2', name: 'Project Manager', organizationsUsing: 96, status: 'Active' },
+    { id: 'r3', name: 'HR Manager', organizationsUsing: 71, status: 'Active' },
+    { id: 'r4', name: 'Accountant', organizationsUsing: 54, status: 'Active' },
+    { id: 'r5', name: 'Site Manager', organizationsUsing: 83, status: 'Active' },
+    { id: 'r6', name: 'Employee', organizationsUsing: 102, status: 'Active' },
+  ],
+  systemHealth: [
+    { id: 'h1', service: 'API', status: 'Operational', lastChecked: 'Just now' },
+    { id: 'h2', service: 'Database', status: 'Operational', lastChecked: 'Just now' },
+    { id: 'h3', service: 'Authentication', status: 'Operational', lastChecked: 'Just now' },
+    { id: 'h4', service: 'Background Jobs', status: 'Operational', lastChecked: 'Just now' },
+  ],
+  attentionRequired: [
+    { id: 'at1', message: '3 organizations pending review', type: 'warning' },
+    { id: 'at2', message: '5 inactive organizations', type: 'info' },
+    { id: 'at3', message: '2 organizations suspended', type: 'critical' },
+    { id: 'at4', message: '4 recent failed system operations', type: 'critical' },
+    { id: 'at5', message: '8 users with incomplete account setup', type: 'warning' },
+  ],
+};
