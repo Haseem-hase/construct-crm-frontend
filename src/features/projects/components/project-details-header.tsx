@@ -2,10 +2,12 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/src/components/ui/button';
 import { Badge } from '@/src/components/ui/badge';
-import { Project } from '../types/project.types';
+import { Project, ProjectStatus } from '../types/project.types';
+import { ProjectStatusActions } from './project-status-actions';
 
 interface ProjectDetailsHeaderProps {
   project: Project;
+  onStatusChange: (newStatus: ProjectStatus) => void;
 }
 
 function getStatusVariant(status: string): 'default' | 'success' | 'warning' | 'destructive' | 'info' | 'neutral' {
@@ -18,7 +20,7 @@ function getStatusVariant(status: string): 'default' | 'success' | 'warning' | '
   }
 }
 
-export function ProjectDetailsHeader({ project }: ProjectDetailsHeaderProps) {
+export function ProjectDetailsHeader({ project, onStatusChange }: ProjectDetailsHeaderProps) {
   const router = useRouter();
 
   return (
@@ -46,10 +48,11 @@ export function ProjectDetailsHeader({ project }: ProjectDetailsHeaderProps) {
             </Badge>
           </div>
         </div>
-        <div className="shrink-0">
+        <div className="shrink-0 flex flex-wrap items-center gap-2">
           <Button onClick={() => router.push(`/projects/${project.id}/edit`)} variant="outline">
             Edit Project
           </Button>
+          <ProjectStatusActions status={project.status} onStatusChange={onStatusChange} />
         </div>
       </div>
     </div>

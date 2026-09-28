@@ -138,11 +138,22 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField label="Status" error={errors.status}>
-              <Select 
-                options={statusOptions}
-                value={status}
-                onChange={val => setStatus(val as ProjectStatus)}
-              />
+              {mode === 'edit' ? (
+                <div className="flex flex-col gap-1">
+                  <div className="h-10 px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-md text-neutral-500 font-medium cursor-not-allowed">
+                    {status}
+                  </div>
+                  <span className="text-[13px] text-neutral-500">
+                    Project status is managed from the project details page.
+                  </span>
+                </div>
+              ) : (
+                <Select 
+                  options={statusOptions}
+                  value={status}
+                  onChange={val => setStatus(val as ProjectStatus)}
+                />
+              )}
             </FormField>
             
             <div className="hidden md:block"></div>

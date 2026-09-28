@@ -4,7 +4,6 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/ca
 import { Badge } from '@/src/components/ui/badge';
 import { Progress } from '@/src/components/ui/progress';
 import { InlineEdit } from '@/src/components/ui/inline-edit';
-import { ProjectStatus } from '../types/project.types';
 
 interface ProjectOverviewProps {
   project: Project;
@@ -40,13 +39,6 @@ function DetailItem({ label, children }: { label: string, children: React.ReactN
 }
 
 export function ProjectOverview({ project, onUpdate }: ProjectOverviewProps) {
-  const statusOptions = [
-    { value: 'Planning', label: 'Planning' },
-    { value: 'Active', label: 'Active' },
-    { value: 'Completed', label: 'Completed' },
-    { value: 'On Hold', label: 'On Hold' },
-  ];
-
   return (
     <Card>
       <CardHeader>
@@ -69,17 +61,9 @@ export function ProjectOverview({ project, onUpdate }: ProjectOverviewProps) {
           </DetailItem>
 
           <DetailItem label="Status">
-            <InlineEdit
-              editor="select"
-              options={statusOptions}
-              value={project.status}
-              onSave={(val) => onUpdate && onUpdate({ status: val as ProjectStatus })}
-              displayValue={
-                <Badge variant={getStatusVariant(project.status)}>
-                  {project.status}
-                </Badge>
-              }
-            />
+            <Badge variant={getStatusVariant(project.status)}>
+              {project.status}
+            </Badge>
           </DetailItem>
 
           <DetailItem label="Progress">

@@ -45,7 +45,10 @@ export default function ProjectDetailsPage({ params }: ProjectDetailsPageProps) 
 
   return (
     <div className="w-full mx-auto pb-12 min-w-0 max-w-6xl">
-      <ProjectDetailsHeader project={project} />
+      <ProjectDetailsHeader 
+        project={project} 
+        onStatusChange={(newStatus) => setProject(p => p ? { ...p, status: newStatus } : p)}
+      />
 
       <div className="flex flex-col gap-8">
         
