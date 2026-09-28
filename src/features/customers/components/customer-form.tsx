@@ -9,21 +9,26 @@ import { Select } from '@/src/components/ui/select';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Button } from '@/src/components/ui/button';
 import { mockCustomers } from '../data/customers.mock';
-import { CustomerType } from '../types/customer.types';
+import { Customer, CustomerType } from '../types/customer.types';
 
-export function CustomerForm() {
+export interface CustomerFormProps {
+  initialData?: Customer;
+}
+
+export function CustomerForm({ initialData }: CustomerFormProps) {
   const router = useRouter();
+  const isEdit = !!initialData;
   
   const [formData, setFormData] = useState({
-    type: '' as CustomerType | '',
-    name: '',
-    email: '',
-    phone: '',
-    alternativePhone: '',
-    country: 'Saudi Arabia',
-    city: '',
-    parentCustomerId: 'no-parent',
-    address: ''
+    type: initialData?.type || ('' as CustomerType | ''),
+    name: initialData?.name || '',
+    email: initialData?.email || '',
+    phone: initialData?.phone || '',
+    alternativePhone: initialData?.alternativePhone || '',
+    country: initialData?.country || 'Saudi Arabia',
+    city: initialData?.city || '',
+    parentCustomerId: initialData?.parentCustomerId || 'no-parent',
+    address: initialData?.address || ''
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -46,10 +51,12 @@ export function CustomerForm() {
 
   const parentOptions = [
     { value: 'no-parent', label: 'No Parent' },
-    ...mockCustomers.filter(c => c.type === 'COMPANY' || c.type === 'GOVERNMENT').map(c => ({
-      value: c.id,
-      label: c.name
-    }))
+    ...mockCustomers
+      .filter(c => (c.type === 'COMPANY' || c.type === 'GOVERNMENT') && c.id !== initialData?.id)
+      .map(c => ({
+        value: c.id,
+        label: c.name
+      }))
   ];
 
   const handleChange = (field: string, value: string) => {
@@ -71,8 +78,12 @@ export function CustomerForm() {
       return;
     }
 
-    console.log('Form submitted:', formData);
-    router.push('/customers');
+    console.log(isEdit ? 'Customer updated:' : 'Customer created:', formData);
+    if (isEdit && initialData) {
+      router.push(`/customers/${initialData.customerCode.toLowerCase()}`);
+    } else {
+      router.push('/customers');
+    }
   };
 
   return (
@@ -174,11 +185,21 @@ export function CustomerForm() {
         </CardContent>
 
         <CardFooter className="justify-end gap-3 bg-neutral-50/50">
-          <Button variant="outline" type="button" onClick={() => router.push('/customers')}>
+          <Button 
+            variant="outline" 
+            type="button" 
+            onClick={() => {
+              if (isEdit && initialData) {
+                router.push(`/customers/${initialData.customerCode.toLowerCase()}`);
+              } else {
+                router.push('/customers');
+              }
+            }}
+          >
             Cancel
           </Button>
           <Button variant="primary" type="submit">
-            Create Customer
+            {isEdit ? 'Save Changes' : 'Create Customer'}
           </Button>
         </CardFooter>
       </form>

@@ -34,7 +34,7 @@ export function CustomerDetailsHeader({ name, code, status }: CustomerDetailsHea
         </div>
       </div>
       <div className="shrink-0 sm:mt-10">
-        <Button onClick={() => {}} variant="outline">
+        <Button onClick={() => router.push(`/customers/${code.toLowerCase()}/edit`)} variant="outline">
           Edit Customer
         </Button>
       </div>

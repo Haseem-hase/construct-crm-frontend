@@ -1,8 +1,9 @@
 'use client';
 
-import React, { use } from 'react';
+import React, { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { mockCustomers } from '@/src/features/customers/data/customers.mock';
+import { Customer } from '@/src/features/customers/types/customer.types';
 import { CustomerDetailsHeader } from '@/src/features/customers/components/customer-details-header';
 import { CustomerOverview } from '@/src/features/customers/components/customer-overview';
 import { CustomerContactInformation } from '@/src/features/customers/components/customer-contact-information';
@@ -14,9 +15,11 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
   const resolvedParams = use(params);
   const router = useRouter();
   
-  const customer = mockCustomers.find(
+  const initialCustomer = mockCustomers.find(
     c => c.id === resolvedParams.id || c.customerCode.toLowerCase() === resolvedParams.id.toLowerCase()
   );
+
+  const [customer, setCustomer] = useState(initialCustomer);
 
   if (!customer) {
     return (
@@ -30,6 +33,13 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
     );
   }
 
+  const handleUpdate = (field: keyof Customer, value: string) => {
+    setCustomer(prev => {
+      if (!prev) return prev;
+      return { ...prev, [field]: value };
+    });
+  };
+
   return (
     <div className="w-full mx-auto pb-8 min-w-0">
       <CustomerDetailsHeader 
@@ -39,12 +49,12 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
       />
       
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
-        <CustomerOverview customer={customer} />
-        <CustomerContactInformation customer={customer} />
+        <CustomerOverview customer={customer} onUpdate={handleUpdate} />
+        <CustomerContactInformation customer={customer} onUpdate={handleUpdate} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
-        <CustomerAddress customer={customer} />
+        <CustomerAddress customer={customer} onUpdate={handleUpdate} />
         <CustomerHierarchy customer={customer} />
       </div>
     </div>
