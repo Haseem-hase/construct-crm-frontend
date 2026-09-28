@@ -6,7 +6,7 @@ import { CustomerFilters } from '@/src/features/customers/components/customer-fi
 import { CustomerTable } from '@/src/features/customers/components/customer-table';
 import { mockCustomers } from '@/src/features/customers/data/customers.mock';
 import { CustomerType, CustomerStatus } from '@/src/features/customers/types/customer.types';
-import { Button } from '@/src/components/ui/button';
+import { Pagination } from '@/src/components/ui/pagination';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -79,9 +79,6 @@ export default function CustomersPage() {
     return filteredCustomers.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredCustomers, validCurrentPage]);
 
-  const startRecord = (validCurrentPage - 1) * ITEMS_PER_PAGE + 1;
-  const endRecord = Math.min(validCurrentPage * ITEMS_PER_PAGE, filteredCustomers.length);
-
   return (
     <div className="w-full mx-auto pb-8 min-w-0">
       <CustomerPageHeader />
@@ -104,32 +101,14 @@ export default function CustomersPage() {
 
       {/* Pagination UI */}
       {filteredCustomers.length > 0 && (
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-neutral-600">
-          <div>
-            Showing <span className="font-medium text-neutral-900">{startRecord}</span> to <span className="font-medium text-neutral-900">{endRecord}</span> of <span className="font-medium text-neutral-900">{filteredCustomers.length}</span> results
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              disabled={validCurrentPage === 1}
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            >
-              Previous
-            </Button>
-            <div className="flex items-center px-3 font-medium">
-              Page {validCurrentPage} of {totalPages}
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm"
-              disabled={validCurrentPage === totalPages}
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+        <Pagination
+          className="mt-6"
+          currentPage={validCurrentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={filteredCustomers.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
       )}
     </div>
   );
