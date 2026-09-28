@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/src/components/ui/badge';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
+import { Progress } from '@/src/components/ui/progress';
 
 interface ProjectTableProps {
   projects: Project[];
@@ -87,15 +88,11 @@ export function ProjectTable({ projects, onClearFilters, currentPage = 1, itemsP
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="w-full bg-neutral-100 rounded-full h-1.5 overflow-hidden flex-1">
-                      <div 
-                        className="bg-neutral-900 h-1.5 rounded-full" 
-                        style={{ width: `${project.progress}%` }} 
-                      />
-                    </div>
-                    <span className="text-[12px] font-medium text-neutral-600 w-8 text-right shrink-0">{project.progress}%</span>
-                  </div>
+                  <Progress 
+                    value={project.progress} 
+                    showValue 
+                    className="w-24" 
+                  />
                 </TableCell>
                 <TableCell>
                   <span className="text-neutral-600 text-[13px]">{formatDate(project.startDate)}</span>
