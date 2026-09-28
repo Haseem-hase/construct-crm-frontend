@@ -5,11 +5,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/src/components/ui/badge';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
+import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
+import { CustomerStatus } from '../types/customer.types';
 
 interface CustomerTableProps {
   customers: Customer[];
   allCustomers: Customer[];
   onClearFilters: () => void;
+  onUpdateStatus: (id: string, status: CustomerStatus) => void;
+  currentPage?: number;
+  itemsPerPage?: number;
 }
 
 function formatDate(isoString: string) {
@@ -25,8 +30,17 @@ function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
-export function CustomerTable({ customers, allCustomers, onClearFilters }: CustomerTableProps) {
+export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdateStatus, currentPage = 1, itemsPerPage = 10 }: CustomerTableProps) {
   const router = useRouter();
+  const [targetCustomer, setTargetCustomer] = React.useState<Customer | null>(null);
+
+  const handleConfirmStatus = () => {
+    if (!targetCustomer) return;
+    const newStatus = targetCustomer.status === 'Active' ? 'Inactive' : 'Active';
+    onUpdateStatus(targetCustomer.id, newStatus);
+    setTargetCustomer(null);
+  };
+
   if (customers.length === 0) {
     return (
       <Card className="flex flex-col items-center justify-center py-16 px-4 text-center">
@@ -44,6 +58,7 @@ export function CustomerTable({ customers, allCustomers, onClearFilters }: Custo
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-[60px] text-center">S.No</TableHead>
             <TableHead>Customer</TableHead>
             <TableHead>Code</TableHead>
             <TableHead>Type</TableHead>
@@ -55,7 +70,8 @@ export function CustomerTable({ customers, allCustomers, onClearFilters }: Custo
           </TableRow>
         </TableHeader>
         <TableBody>
-          {customers.map(customer => {
+          {customers.map((customer, index) => {
+            const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
             let parentName = '—';
             if (customer.parentCustomerId) {
               const parent = allCustomers.find(c => c.id === customer.parentCustomerId);
@@ -66,6 +82,9 @@ export function CustomerTable({ customers, allCustomers, onClearFilters }: Custo
 
             return (
               <TableRow key={customer.id}>
+                <TableCell className="text-center text-neutral-500 text-[13px] font-medium">
+                  {serialNumber}
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-medium text-neutral-900">{customer.name}</span>
@@ -99,8 +118,30 @@ export function CustomerTable({ customers, allCustomers, onClearFilters }: Custo
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => router.push(`/customers/${customer.customerCode.toLowerCase()}`)}>View</Button>
-                    <Button variant="ghost" size="sm" onClick={() => {}}>Edit</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-16"
+                      onClick={() => router.push(`/customers/${customer.customerCode.toLowerCase()}`)}
+                    >
+                      View
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-16"
+                      onClick={() => router.push(`/customers/${customer.customerCode.toLowerCase()}/edit`)}
+                    >
+                      Edit
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setTargetCustomer(customer)}
+                      className={`w-24 ${customer.status === 'Active' ? 'text-red-600 hover:text-red-700 hover:bg-red-50' : 'text-neutral-900'}`}
+                    >
+                      {customer.status === 'Active' ? 'Deactivate' : 'Activate'}
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -108,6 +149,15 @@ export function CustomerTable({ customers, allCustomers, onClearFilters }: Custo
           })}
         </TableBody>
       </Table>
+      <ConfirmationDialog
+        open={!!targetCustomer}
+        onOpenChange={(open) => !open && setTargetCustomer(null)}
+        title={targetCustomer?.status === 'Active' ? 'Deactivate customer?' : 'Activate customer?'}
+        description={`Are you sure you want to ${targetCustomer?.status === 'Active' ? 'deactivate' : 'activate'} ${targetCustomer?.name}?`}
+        confirmLabel={targetCustomer?.status === 'Active' ? 'Deactivate' : 'Activate'}
+        variant={targetCustomer?.status === 'Active' ? 'destructive' : 'primary'}
+        onConfirm={handleConfirmStatus}
+      />
     </Card>
   );
 }

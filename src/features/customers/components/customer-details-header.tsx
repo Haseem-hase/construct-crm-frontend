@@ -9,9 +9,10 @@ interface CustomerDetailsHeaderProps {
   name: string;
   code: string;
   status: 'Active' | 'Inactive';
+  onActivateToggle: () => void;
 }
 
-export function CustomerDetailsHeader({ name, code, status }: CustomerDetailsHeaderProps) {
+export function CustomerDetailsHeader({ name, code, status, onActivateToggle }: CustomerDetailsHeaderProps) {
   const router = useRouter();
 
   return (
@@ -33,9 +34,15 @@ export function CustomerDetailsHeader({ name, code, status }: CustomerDetailsHea
           </div>
         </div>
       </div>
-      <div className="shrink-0 sm:mt-10">
+      <div className="shrink-0 sm:mt-10 flex flex-col sm:flex-row gap-2">
         <Button onClick={() => router.push(`/customers/${code.toLowerCase()}/edit`)} variant="outline">
           Edit Customer
+        </Button>
+        <Button 
+          onClick={onActivateToggle} 
+          variant={status === 'Active' ? 'destructive' : 'primary'}
+        >
+          {status === 'Active' ? 'Deactivate' : 'Activate'}
         </Button>
       </div>
     </div>

@@ -8,8 +8,8 @@ import { Button } from './button';
 
 export interface InlineEditProps {
   value: string;
-  onSave: (value: string) => void;
-  editor?: 'text' | 'email' | 'phone' | 'textarea' | 'select';
+  onSave: (value: string) => boolean | void;
+  editor?: 'text' | 'email' | 'phone' | 'textarea' | 'select' | 'date' | 'number';
   options?: { value: string; label: string }[];
   displayValue?: React.ReactNode;
   placeholder?: string;
@@ -42,8 +42,10 @@ export function InlineEdit({
 
   const handleSave = () => {
     if (disabled) return;
-    onSave(editValue);
-    setIsEditing(false);
+    const result = onSave(editValue);
+    if (result !== false) {
+      setIsEditing(false);
+    }
   };
 
   const handleCancel = () => {

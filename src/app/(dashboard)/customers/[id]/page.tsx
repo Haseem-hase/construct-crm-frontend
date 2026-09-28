@@ -10,6 +10,7 @@ import { CustomerContactInformation } from '@/src/features/customers/components/
 import { CustomerAddress } from '@/src/features/customers/components/customer-address';
 import { CustomerHierarchy } from '@/src/features/customers/components/customer-hierarchy';
 import { Button } from '@/src/components/ui/button';
+import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
 
 export default function CustomerDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -20,6 +21,7 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
   );
 
   const [customer, setCustomer] = useState(initialCustomer);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   if (!customer) {
     return (
@@ -40,12 +42,17 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
     });
   };
 
+  const handleToggleStatus = () => {
+    handleUpdate('status', customer.status === 'Active' ? 'Inactive' : 'Active');
+  };
+
   return (
     <div className="w-full mx-auto pb-8 min-w-0">
       <CustomerDetailsHeader 
         name={customer.name} 
         code={customer.customerCode} 
         status={customer.status} 
+        onActivateToggle={() => setIsConfirmOpen(true)}
       />
       
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
@@ -57,6 +64,16 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
         <CustomerAddress customer={customer} onUpdate={handleUpdate} />
         <CustomerHierarchy customer={customer} />
       </div>
+
+      <ConfirmationDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        title={customer.status === 'Active' ? 'Deactivate customer?' : 'Activate customer?'}
+        description={`Are you sure you want to ${customer.status === 'Active' ? 'deactivate' : 'activate'} ${customer.name}?`}
+        confirmLabel={customer.status === 'Active' ? 'Deactivate' : 'Activate'}
+        variant={customer.status === 'Active' ? 'destructive' : 'primary'}
+        onConfirm={handleToggleStatus}
+      />
     </div>
   );
 }
