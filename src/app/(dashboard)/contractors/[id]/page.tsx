@@ -1,11 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { mockContractors } from '@/src/features/contractors/data/contractors.mock';
-import { ContractorDetailsHeader } from '@/src/features/contractors/components/contractor-details-header';
-import { ContractorOverview } from '@/src/features/contractors/components/contractor-overview';
-import { ContractorContactInfo } from '@/src/features/contractors/components/contractor-contact-info';
-import { ContractorLocation } from '@/src/features/contractors/components/contractor-location';
-import { ContractorLicense } from '@/src/features/contractors/components/contractor-license';
+import { ContractorDetailsClient } from '@/src/features/contractors/components/contractor-details-client';
 
 export default async function ContractorDetailsPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   // Await params to support Next.js 15+ where params is a Promise
@@ -30,16 +26,5 @@ export default async function ContractorDetailsPage({ params }: { params: Promis
     );
   }
 
-  return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-12">
-      <ContractorDetailsHeader contractor={contractor} />
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ContractorOverview contractor={contractor} />
-        <ContractorContactInfo contractor={contractor} />
-        <ContractorLocation contractor={contractor} />
-        <ContractorLicense contractor={contractor} />
-      </div>
-    </div>
-  );
+  return <ContractorDetailsClient initialContractor={contractor} />;
 }
