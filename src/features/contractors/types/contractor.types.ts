@@ -11,6 +11,7 @@ export interface Contractor {
   country: string;
   city: string;
   address: string;
+  profileImage?: string;
   nationalId?: string;
   licenseNumber: string;
   licenseExpiryDate?: string;
