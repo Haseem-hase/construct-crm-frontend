@@ -5,6 +5,7 @@ import { Button } from '@/src/components/ui/button';
 import { Badge } from '@/src/components/ui/badge';
 import { User, ChevronLeft } from '@/src/components/ui/icons';
 import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
+import { ContractorStatusActions } from './contractor-status-actions';
 
 interface ContractorDetailsHeaderProps {
   contractor: Contractor;
@@ -106,22 +107,28 @@ export function ContractorDetailsHeader({ contractor, onUpdate }: ContractorDeta
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3 w-full md:w-auto">
+      <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
         <Button 
           variant="outline" 
-          className="flex-1 md:flex-none"
+          className="w-full sm:w-auto"
           onClick={() => router.push('/contractors')}
         >
           <ChevronLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
         <Button 
-          variant="primary"
-          className="flex-1 md:flex-none"
+          variant="outline"
+          className="w-full sm:w-auto"
           onClick={() => router.push(`/contractors/${contractor.id}/edit`)}
         >
           Edit Contractor
         </Button>
+        {onUpdate && (
+          <ContractorStatusActions 
+            status={contractor.status}
+            onStatusChange={(newStatus) => onUpdate({ status: newStatus })}
+          />
+        )}
       </div>
 
       <ConfirmationDialog
