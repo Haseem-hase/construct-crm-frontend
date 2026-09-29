@@ -117,7 +117,7 @@ export function AssignmentForm() {
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full min-w-0">
       
       {/* Section 1: Assignment */}
-      <Card>
+      <Card className="overflow-visible">
         <CardHeader>
           <CardTitle>Assignment</CardTitle>
         </CardHeader>
@@ -149,7 +149,7 @@ export function AssignmentForm() {
       </Card>
 
       {/* Section 2: Responsibilities */}
-      <Card>
+      <Card className="overflow-visible">
         <CardHeader>
           <CardTitle>Responsibilities</CardTitle>
         </CardHeader>

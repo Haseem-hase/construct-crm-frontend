@@ -142,7 +142,7 @@ export function MultiSelect({
       </div>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-neutral-200/80 bg-white py-1 shadow-lg">
+        <div className="absolute top-full left-0 z-50 mt-1 w-full rounded-md border border-neutral-200/80 bg-white py-1 shadow-lg">
           <ul
             id="multiselect-listbox"
             role="listbox"
