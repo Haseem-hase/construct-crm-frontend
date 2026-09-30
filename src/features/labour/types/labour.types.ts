@@ -7,8 +7,14 @@ export interface Labour {
   fullName: string;
   phone: string;
   email?: string;
+  dateOfBirth?: string;
+  country: string;
   city: string;
-  joiningDate: string;
+  address?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  joiningDate?: string;
   status: LabourStatus;
   profileImageUrl?: string;
+  notes?: string;
 }
