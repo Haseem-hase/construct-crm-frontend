@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Assignment } from '../types/assignment.types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { Badge } from '@/src/components/ui/badge';
+import { InlineEdit } from '@/src/components/ui/inline-edit';
 
 interface AssignmentOverviewProps {
   assignment: Assignment;
+  onUpdate?: (updates: Partial<Assignment>) => void;
 }
 
 function formatDate(isoString?: string) {
@@ -52,13 +54,40 @@ function DetailItem({ label, children, emptyMessage = 'Not provided' }: { label:
   );
 }
 
-export function AssignmentOverview({ assignment }: AssignmentOverviewProps) {
+export function AssignmentOverview({ assignment, onUpdate }: AssignmentOverviewProps) {
+  const [error, setError] = useState<string | null>(null);
+
+  const handleStartDateSave = (newStartDate: string) => {
+    if (assignment.endDate && newStartDate && new Date(assignment.endDate) < new Date(newStartDate)) {
+      setError('Start date must be before or equal to the end date.');
+      return false; // Keep edit mode
+    }
+    setError(null);
+    onUpdate?.({ startDate: newStartDate });
+    return true;
+  };
+
+  const handleEndDateSave = (newEndDate: string) => {
+    if (assignment.startDate && newEndDate && new Date(newEndDate) < new Date(assignment.startDate)) {
+      setError('End date must be on or after the start date.');
+      return false; // Keep edit mode
+    }
+    setError(null);
+    onUpdate?.({ endDate: newEndDate });
+    return true;
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Assignment Overview</CardTitle>
       </CardHeader>
       <CardContent>
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-md border border-red-100">
+            {error}
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
           <DetailItem label="Status">
             <Badge variant={getStatusVariant(assignment.status)}>
@@ -67,11 +96,23 @@ export function AssignmentOverview({ assignment }: AssignmentOverviewProps) {
           </DetailItem>
           
           <DetailItem label="Start Date">
-            {assignment.startDate ? formatDate(assignment.startDate) : <span className="text-neutral-400 italic">Not provided</span>}
+            <InlineEdit
+              value={assignment.startDate || ''}
+              onSave={handleStartDateSave}
+              editor="date"
+              displayValue={assignment.startDate ? formatDate(assignment.startDate) : undefined}
+              disabled={!onUpdate}
+            />
           </DetailItem>
 
           <DetailItem label="End Date">
-            {assignment.endDate ? formatDate(assignment.endDate) : <span className="text-neutral-400 italic">Not provided</span>}
+            <InlineEdit
+              value={assignment.endDate || ''}
+              onSave={handleEndDateSave}
+              editor="date"
+              displayValue={assignment.endDate ? formatDate(assignment.endDate) : undefined}
+              disabled={!onUpdate}
+            />
           </DetailItem>
         </div>
       </CardContent>

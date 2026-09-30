@@ -4,7 +4,7 @@ import React, { use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/src/components/ui/button';
 import { mockAssignments } from '@/src/features/assignments/data/assignments.mock';
-import { AssignmentDetailsClient } from '@/src/features/assignments/components/assignment-details-client';
+import { AssignmentForm } from '@/src/features/assignments/components/assignment-form';
 
 interface PageProps {
   params: Promise<{
@@ -12,7 +12,7 @@ interface PageProps {
   }>;
 }
 
-export default function AssignmentDetailsPage({ params }: PageProps) {
+export default function EditAssignmentPage({ params }: PageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
   const id = resolvedParams.id;
@@ -31,6 +31,18 @@ export default function AssignmentDetailsPage({ params }: PageProps) {
     );
   }
 
-  return <AssignmentDetailsClient initialAssignment={assignment} />;
-}
+  return (
+    <div className="max-w-4xl mx-auto pb-16">
+      <div className="mb-8">
+        <h1 className="text-3xl font-semibold tracking-tight text-neutral-900 mb-2">
+          Edit Contractor Assignment
+        </h1>
+        <p className="text-neutral-500">
+          Update the contractor assignment details.
+        </p>
+      </div>
 
+      <AssignmentForm mode="edit" initialData={assignment} />
+    </div>
+  );
+}

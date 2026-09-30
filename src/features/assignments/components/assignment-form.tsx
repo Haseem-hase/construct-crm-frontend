@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { Assignment } from '../types/assignment.types';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
@@ -14,23 +15,28 @@ import { mockContractors } from '@/src/features/contractors/data/contractors.moc
 import { mockAssignments } from '@/src/features/assignments/data/assignments.mock';
 import { RESPONSIBILITY_OPTIONS } from '../data/assignment-options';
 
-export function AssignmentForm() {
+interface AssignmentFormProps {
+  mode?: 'create' | 'edit';
+  initialData?: Assignment;
+}
+
+export function AssignmentForm({ mode = 'create', initialData }: AssignmentFormProps) {
   const router = useRouter();
 
   // Assignment section
-  const [projectId, setProjectId] = useState('');
-  const [contractorId, setContractorId] = useState('');
+  const [projectId, setProjectId] = useState(initialData?.projectId || '');
+  const [contractorId, setContractorId] = useState(initialData?.contractorId || '');
 
   // Responsibilities
-  const [responsibilityIds, setResponsibilityIds] = useState<string[]>([]);
+  const [responsibilityIds, setResponsibilityIds] = useState<string[]>(initialData?.responsibilityIds || []);
 
   // Dates
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(initialData?.startDate || '');
+  const [endDate, setEndDate] = useState(initialData?.endDate || '');
 
   // Work Details
-  const [scope, setScope] = useState('');
-  const [notes, setNotes] = useState('');
+  const [scope, setScope] = useState(initialData?.scope || '');
+  const [notes, setNotes] = useState(initialData?.notes || '');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,8 +65,9 @@ export function AssignmentForm() {
     label: r.name,
   }));
 
-  // Duplicate Check
+  // Duplicate Check (only in create mode)
   const duplicateError = useMemo(() => {
+    if (mode === 'edit') return null;
     if (!projectId || !contractorId) return null;
     const exists = mockAssignments.some(
       (a) => a.projectId === projectId && a.contractorId === contractorId
@@ -69,7 +76,7 @@ export function AssignmentForm() {
       return 'This contractor is already assigned to this project.';
     }
     return null;
-  }, [projectId, contractorId]);
+  }, [projectId, contractorId, mode]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -98,19 +105,34 @@ export function AssignmentForm() {
     // Mock API delay
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    const payload = {
-      projectId,
-      contractorId,
-      responsibilityIds,
-      scope: scope.trim() || null,
-      startDate,
-      endDate,
-      notes: notes.trim() || null,
-    };
+    let payload;
+    if (mode === 'create') {
+      payload = {
+        projectId,
+        contractorId,
+        responsibilityIds,
+        scope: scope.trim() || null,
+        startDate,
+        endDate,
+        notes: notes.trim() || null,
+      };
+    } else {
+      payload = {
+        responsibilityIds,
+        scope: scope.trim() || null,
+        startDate,
+        endDate,
+        notes: notes.trim() || null,
+      };
+    }
 
-    console.log('Submitted Assignment Payload:', payload);
+    console.log(`Submitted Assignment Payload (${mode}):`, payload);
 
-    router.push('/assignments');
+    if (mode === 'edit' && initialData) {
+      router.push(`/assignments/${initialData.id}`);
+    } else {
+      router.push('/assignments');
+    }
   };
 
   return (
@@ -124,19 +146,33 @@ export function AssignmentForm() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField label="Project" required error={errors.projectId}>
-              <Select
-                options={[{ value: '', label: 'Select a project' }, ...projectOptions]}
-                value={projectId}
-                onChange={setProjectId}
-              />
+              {mode === 'edit' && initialData ? (
+                <div className="flex flex-col h-10 px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-md text-[14px]">
+                  <span className="font-medium text-neutral-900 truncate">{initialData.projectName}</span>
+                  <span className="text-[12px] text-neutral-500 font-mono mt-0.5">{initialData.projectCode}</span>
+                </div>
+              ) : (
+                <Select
+                  options={[{ value: '', label: 'Select a project' }, ...projectOptions]}
+                  value={projectId}
+                  onChange={setProjectId}
+                />
+              )}
             </FormField>
 
             <FormField label="Contractor" required error={errors.contractorId}>
-              <Select
-                options={[{ value: '', label: 'Select a contractor' }, ...contractorOptions]}
-                value={contractorId}
-                onChange={setContractorId}
-              />
+              {mode === 'edit' && initialData ? (
+                <div className="flex flex-col h-10 px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-md text-[14px]">
+                  <span className="font-medium text-neutral-900 truncate">{initialData.contractorName}</span>
+                  <span className="text-[12px] text-neutral-500 font-mono mt-0.5">{initialData.contractorCode}</span>
+                </div>
+              ) : (
+                <Select
+                  options={[{ value: '', label: 'Select a contractor' }, ...contractorOptions]}
+                  value={contractorId}
+                  onChange={setContractorId}
+                />
+              )}
             </FormField>
           </div>
           
@@ -232,7 +268,13 @@ export function AssignmentForm() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push('/assignments')}
+            onClick={() => {
+              if (mode === 'edit' && initialData) {
+                router.push(`/assignments/${initialData.id}`);
+              } else {
+                router.push('/assignments');
+              }
+            }}
             disabled={isSubmitting}
             className="w-full sm:w-auto"
           >
@@ -245,12 +287,14 @@ export function AssignmentForm() {
             disabled={!!duplicateError}
             className="w-full sm:w-auto"
           >
-            {isSubmitting ? 'Assigning...' : 'Assign Contractor'}
+            {isSubmitting ? 'Saving...' : mode === 'edit' ? 'Save Changes' : 'Assign Contractor'}
           </Button>
         </div>
-        <p className="text-center sm:text-right text-[13px] text-neutral-500">
-          New contractor assignments are created with Pending status.
-        </p>
+        {mode === 'create' && (
+          <p className="text-center sm:text-right text-[13px] text-neutral-500">
+            New contractor assignments are created with Pending status.
+          </p>
+        )}
       </div>
 
     </form>
