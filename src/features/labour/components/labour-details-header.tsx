@@ -5,6 +5,7 @@ import { Button } from '@/src/components/ui/button';
 import { Badge } from '@/src/components/ui/badge';
 import { User, ChevronLeft } from '@/src/components/ui/icons';
 import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
+import { LabourStatusActions } from './labour-status-actions';
 
 interface LabourDetailsHeaderProps {
   labour: Labour;
@@ -117,6 +118,19 @@ export function LabourDetailsHeader({ labour, onUpdate }: LabourDetailsHeaderPro
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
+        {onUpdate && (
+          <LabourStatusActions 
+            status={labour.status} 
+            onStatusChange={(status) => onUpdate({ status })} 
+          />
+        )}
+        <Button 
+          variant="outline"
+          className="w-full sm:w-auto"
+          onClick={() => router.push(`/labour/${labour.id}/edit`)}
+        >
+          Edit Labour
+        </Button>
         <Button 
           variant="outline" 
           className="w-full sm:w-auto"
@@ -124,13 +138,6 @@ export function LabourDetailsHeader({ labour, onUpdate }: LabourDetailsHeaderPro
         >
           <ChevronLeft className="w-4 h-4 mr-2" />
           Back
-        </Button>
-        <Button 
-          variant="outline"
-          className="w-full sm:w-auto"
-          onClick={() => router.push(`/labour/${labour.id}/edit`)}
-        >
-          Edit Labour
         </Button>
       </div>
 
