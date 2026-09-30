@@ -15,9 +15,16 @@ export function AssignmentDetailsClient({ initialAssignment }: { initialAssignme
     setAssignment(prev => ({ ...prev, ...updates }));
   };
 
+  const handleStatusChange = (newStatus: Assignment['status']) => {
+    setAssignment(prev => ({ ...prev, status: newStatus }));
+  };
+
   return (
     <div className="flex flex-col max-w-6xl mx-auto pb-16">
-      <AssignmentDetailsHeader assignment={assignment} />
+      <AssignmentDetailsHeader 
+        assignment={assignment} 
+        onStatusChange={handleStatusChange} 
+      />
       <AssignmentRelationship assignment={assignment} />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

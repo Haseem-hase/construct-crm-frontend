@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/src/components/ui/button';
 import { Badge } from '@/src/components/ui/badge';
 import { Assignment } from '../types/assignment.types';
+import { AssignmentStatusActions } from './assignment-status-actions';
 
 interface AssignmentDetailsHeaderProps {
   assignment: Assignment;
+  onStatusChange: (status: Assignment['status']) => void;
 }
 
 function getStatusLabel(status: string): string {
@@ -24,7 +26,7 @@ function getStatusLabel(status: string): string {
 
 function getStatusVariant(status: string): 'default' | 'success' | 'warning' | 'destructive' | 'info' | 'neutral' {
   switch (status) {
-    case 'PENDING': return 'info';
+    case 'PENDING': return 'warning';
     case 'ACTIVE': return 'success';
     case 'ON_HOLD': return 'warning';
     case 'COMPLETED': return 'neutral';
@@ -34,7 +36,7 @@ function getStatusVariant(status: string): 'default' | 'success' | 'warning' | '
   }
 }
 
-export function AssignmentDetailsHeader({ assignment }: AssignmentDetailsHeaderProps) {
+export function AssignmentDetailsHeader({ assignment, onStatusChange }: AssignmentDetailsHeaderProps) {
   const router = useRouter();
 
   return (
@@ -64,6 +66,10 @@ export function AssignmentDetailsHeader({ assignment }: AssignmentDetailsHeaderP
           </div>
         </div>
         <div className="shrink-0 flex flex-wrap items-center gap-2">
+          <AssignmentStatusActions 
+            status={assignment.status} 
+            onStatusChange={onStatusChange} 
+          />
           <Button onClick={() => router.push(`/assignments/${assignment.id}/edit`)} variant="outline">
             Edit Assignment
           </Button>
