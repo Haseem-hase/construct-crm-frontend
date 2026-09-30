@@ -3,11 +3,11 @@
 import React, { useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { mockLabour } from '@/src/features/labour/data/labour.mock';
-import { LabourDetailsClient } from '@/src/features/labour/components/labour-details-client';
+import { LabourForm } from '@/src/features/labour/components/labour-form';
 import { Button } from '@/src/components/ui/button';
 import { ChevronLeft } from '@/src/components/ui/icons';
 
-export default function LabourDetailsPage() {
+export default function EditLabourPage() {
   const params = useParams();
   const router = useRouter();
   const labourId = params?.id as string;
@@ -31,5 +31,26 @@ export default function LabourDetailsPage() {
     );
   }
 
-  return <LabourDetailsClient initialLabour={labour} />;
+  return (
+    <div className="w-full mx-auto pb-12 min-w-0 max-w-4xl">
+      <div className="flex flex-col gap-4 mb-8">
+        <div>
+          <Button 
+            variant="ghost" 
+            onClick={() => router.push(`/labour/${labour.id}`)} 
+            className="-ml-4 text-neutral-500"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Back to Labour Details
+          </Button>
+        </div>
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-neutral-900">Edit Labour</h1>
+          <p className="text-[15px] text-neutral-500 mt-1">Update information for {labour.fullName}.</p>
+        </div>
+      </div>
+
+      <LabourForm mode="edit" initialData={labour} />
+    </div>
+  );
 }

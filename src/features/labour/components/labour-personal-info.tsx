@@ -2,9 +2,12 @@ import React from 'react';
 import { Labour } from '../types/labour.types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { Badge } from '@/src/components/ui/badge';
+import { InlineEdit } from '@/src/components/ui/inline-edit';
+import { LABOUR_PROFESSIONS } from '../data/labour-options';
 
 interface LabourPersonalInfoProps {
   labour: Labour;
+  onUpdate?: (updates: Partial<Labour>) => void;
 }
 
 function formatDate(isoString?: string) {
@@ -25,7 +28,25 @@ function getStatusVariant(status: string): 'default' | 'success' | 'warning' | '
   }
 }
 
-export function LabourPersonalInfo({ labour }: LabourPersonalInfoProps) {
+export function LabourPersonalInfo({ labour, onUpdate }: LabourPersonalInfoProps) {
+  const professionOptions = [
+    { value: '', label: 'Select profession' },
+    ...LABOUR_PROFESSIONS
+  ];
+
+  const handleSave = (field: keyof Labour, value: string, required: boolean = false) => {
+    if (required && !value.trim()) return false;
+    // For date of birth and joining date, validate not in future
+    if (field === 'dateOfBirth' || field === 'joiningDate') {
+      const today = new Date().toISOString().split('T')[0];
+      if (value && value > today) {
+        return false;
+      }
+    }
+    onUpdate?.({ [field]: value });
+    return true;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -33,28 +54,52 @@ export function LabourPersonalInfo({ labour }: LabourPersonalInfoProps) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
-          <div>
-            <p className="text-sm font-medium text-neutral-500 mb-1">Full Name</p>
-            <p className="text-[15px] text-neutral-900">{labour.fullName}</p>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-neutral-500">Full Name</span>
+            <div className="text-[15px] text-neutral-900">
+              <InlineEdit
+                value={labour.fullName}
+                onSave={(v) => handleSave('fullName', v, true)}
+                editor="text"
+              />
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-neutral-500 mb-1">Profession</p>
-            <p className="text-[15px] text-neutral-900">{labour.professionName}</p>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-neutral-500">Profession</span>
+            <div className="text-[15px] text-neutral-900">
+              <InlineEdit
+                value={labour.professionId}
+                displayValue={labour.professionName}
+                onSave={(v) => handleSave('professionId', v, true)}
+                editor="select"
+                options={professionOptions}
+              />
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-neutral-500 mb-1">Date of Birth</p>
-            <p className="text-[15px] text-neutral-900">
-              {formatDate(labour.dateOfBirth)}
-            </p>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-neutral-500">Date of Birth</span>
+            <div className="text-[15px] text-neutral-900">
+              <InlineEdit
+                value={labour.dateOfBirth?.split('T')[0] || ''}
+                displayValue={formatDate(labour.dateOfBirth)}
+                onSave={(v) => handleSave('dateOfBirth', v ? new Date(v).toISOString() : '')}
+                editor="date"
+              />
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-neutral-500 mb-1">Joining Date</p>
-            <p className="text-[15px] text-neutral-900">
-              {formatDate(labour.joiningDate)}
-            </p>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-neutral-500">Joining Date</span>
+            <div className="text-[15px] text-neutral-900">
+              <InlineEdit
+                value={labour.joiningDate?.split('T')[0] || ''}
+                displayValue={formatDate(labour.joiningDate)}
+                onSave={(v) => handleSave('joiningDate', v ? new Date(v).toISOString() : '')}
+                editor="date"
+              />
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-neutral-500 mb-1">Status</p>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-neutral-500">Status</span>
             <div className="mt-1">
               <Badge variant={getStatusVariant(labour.status)}>
                 {labour.status === 'ACTIVE' ? 'Active' : 'Inactive'}

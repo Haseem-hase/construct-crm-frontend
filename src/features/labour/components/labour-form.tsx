@@ -26,7 +26,7 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
   const [professionId, setProfessionId] = useState(initialData?.professionId || '');
   const [phone, setPhone] = useState(initialData?.phone || '');
   const [email, setEmail] = useState(initialData?.email || '');
-  const [dateOfBirth, setDateOfBirth] = useState(''); // not in type yet, but requested in form
+  const [dateOfBirth, setDateOfBirth] = useState(initialData?.dateOfBirth?.split('T')[0] || '');
   const [joiningDate, setJoiningDate] = useState(initialData?.joiningDate?.split('T')[0] || '');
 
   // Card 2 — Profile Image
@@ -35,16 +35,16 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
   const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
 
   // Card 3 — Location
-  const [country, setCountry] = useState('Saudi Arabia');
+  const [country, setCountry] = useState(initialData?.country || 'Saudi Arabia');
   const [city, setCity] = useState(initialData?.city || '');
-  const [address, setAddress] = useState('');
+  const [address, setAddress] = useState(initialData?.address || '');
 
   // Card 4 — Emergency Contact
-  const [emergencyContactName, setEmergencyContactName] = useState('');
-  const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
+  const [emergencyContactName, setEmergencyContactName] = useState(initialData?.emergencyContactName || '');
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState(initialData?.emergencyContactPhone || '');
 
   // Card 5 — Additional Information
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(initialData?.notes || '');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -131,7 +131,11 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
       notes: notes.trim() || undefined
     });
 
-    router.push('/labour');
+    if (mode === 'edit' && initialData?.id) {
+      router.push(`/labour/${initialData.id}`);
+    } else {
+      router.push('/labour');
+    }
   };
 
   return (
@@ -338,7 +342,13 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push('/labour')}
+          onClick={() => {
+            if (mode === 'edit' && initialData?.id) {
+              router.push(`/labour/${initialData.id}`);
+            } else {
+              router.push('/labour');
+            }
+          }}
           disabled={isSubmitting}
           className="w-full sm:w-auto"
         >
@@ -350,7 +360,7 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
           isLoading={isSubmitting}
           className="w-full sm:w-auto"
         >
-          {mode === 'create' ? 'Create Labour' : 'Save Changes'}
+          {mode === 'create' ? 'Create Labour' : 'Update Labour'}
         </Button>
       </div>
 
