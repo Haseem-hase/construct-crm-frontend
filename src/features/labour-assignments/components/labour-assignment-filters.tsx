@@ -108,33 +108,43 @@ export function LabourAssignmentFilters({
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap sm:flex-nowrap gap-3 overflow-x-auto pb-1 sm:pb-0">
-          <Select
-            options={labourOptions}
-            value={labourFilter}
-            onChange={onLabourChange}
-          />
-          <Select
-            options={professionOptions}
-            value={professionFilter}
-            onChange={onProfessionChange}
-          />
-          <Select
-            options={contractorOptions}
-            value={contractorFilter}
-            onChange={onContractorChange}
-          />
-          <Select
-            options={projectOptions}
-            value={projectFilter}
-            onChange={onProjectChange}
-          />
-          <Select
-            options={statusOptions}
-            value={statusFilter}
-            onChange={(val) => onStatusChange(val as LabourAssignmentStatus | '')}
-          />
-          <Button variant="outline" onClick={onReset} className="whitespace-nowrap">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap lg:justify-end gap-3 lg:max-w-4xl">
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <Select
+              options={labourOptions}
+              value={labourFilter}
+              onChange={onLabourChange}
+            />
+          </div>
+          <div className="w-full sm:w-auto min-w-[160px]">
+            <Select
+              options={professionOptions}
+              value={professionFilter}
+              onChange={onProfessionChange}
+            />
+          </div>
+          <div className="w-full sm:w-auto min-w-[160px]">
+            <Select
+              options={contractorOptions}
+              value={contractorFilter}
+              onChange={onContractorChange}
+            />
+          </div>
+          <div className="w-full sm:w-auto min-w-[160px]">
+            <Select
+              options={projectOptions}
+              value={projectFilter}
+              onChange={onProjectChange}
+            />
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <Select
+              options={statusOptions}
+              value={statusFilter}
+              onChange={(val) => onStatusChange(val as LabourAssignmentStatus | '')}
+            />
+          </div>
+          <Button variant="outline" onClick={onReset} className="w-full sm:w-auto whitespace-nowrap">
             Reset
           </Button>
         </div>
