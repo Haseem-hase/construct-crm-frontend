@@ -3,9 +3,11 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/src/components/ui/button';
 import { Badge } from '@/src/components/ui/badge';
 import { LabourAssignment } from '../types/labour-assignment.types';
+import { LabourAssignmentStatusActions } from './labour-assignment-status-actions';
 
 interface LabourAssignmentDetailsHeaderProps {
   assignment: LabourAssignment;
+  onStatusChange?: (status: LabourAssignment['status']) => void;
 }
 
 function getStatusLabel(status: string): string {
@@ -26,7 +28,7 @@ function getStatusVariant(status: string): 'default' | 'success' | 'destructive'
   }
 }
 
-export function LabourAssignmentDetailsHeader({ assignment }: LabourAssignmentDetailsHeaderProps) {
+export function LabourAssignmentDetailsHeader({ assignment, onStatusChange }: LabourAssignmentDetailsHeaderProps) {
   const router = useRouter();
 
   return (
@@ -60,6 +62,9 @@ export function LabourAssignmentDetailsHeader({ assignment }: LabourAssignmentDe
           </div>
         </div>
         <div className="shrink-0 flex flex-wrap items-center gap-2">
+          {onStatusChange && (
+            <LabourAssignmentStatusActions status={assignment.status} onStatusChange={onStatusChange} />
+          )}
           <Button onClick={() => router.push(`/labour-assignments/${assignment.id}/edit`)} variant="outline">
             Edit Assignment
           </Button>

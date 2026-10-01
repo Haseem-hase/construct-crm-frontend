@@ -17,7 +17,7 @@ export function LabourAssignmentDetailsClient({ assignment: initialAssignment }:
 
   return (
     <div className="flex flex-col max-w-5xl mx-auto pb-16 w-full">
-      <LabourAssignmentDetailsHeader assignment={assignment} />
+      <LabourAssignmentDetailsHeader assignment={assignment} onStatusChange={(status) => handleUpdate({ status })} />
       <LabourAssignmentRelationship assignment={assignment} />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
