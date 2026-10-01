@@ -1,28 +1,42 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, Users, FolderOpen, Hammer, 
-  HardHat, ClipboardList, Shield, Settings 
+  HardHat, ClipboardList, Shield, Settings, ChevronDown
 } from '@/src/components/ui/icons';
 
-const mainNavigation = [
+type NavItem = {
+  name: string;
+  href?: string;
+  icon: React.FC<React.SVGProps<SVGSVGElement>>;
+  subItems?: { name: string; href: string }[];
+};
+
+const mainNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Customers', href: '/customers', icon: Users },
   { name: 'Projects', href: '/projects', icon: FolderOpen },
   { name: 'Contractors', href: '/contractors', icon: Hammer },
   { name: 'Labour', href: '/labour', icon: HardHat },
-  { name: 'Assignments', href: '/assignments', icon: ClipboardList },
+  { 
+    name: 'Assignments', 
+    icon: ClipboardList,
+    subItems: [
+      { name: 'Contractor Assignments', href: '/assignments' },
+      { name: 'Labour Assignments', href: '/labour-assignments' }
+    ]
+  },
 ];
 
-const adminNavigation = [
+const adminNavigation: NavItem[] = [
   { name: 'Roles & Permissions', href: '/roles', icon: Shield },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-const platformNavigation = [
+const platformNavigation: NavItem[] = [
   { name: 'Platform Dashboard', href: '/super-admin', icon: LayoutDashboard },
   { name: 'Organizations', href: '/super-admin/organizations', icon: FolderOpen },
   { name: 'Users', href: '/super-admin/users', icon: Users },
@@ -31,27 +45,100 @@ const platformNavigation = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const [lastPathname, setLastPathname] = useState<string | null>(null);
 
-  const renderNavItems = (items: { name: string, href: string, icon: React.FC<React.SVGProps<SVGSVGElement>> }[]) => (
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
+    const newExpanded = { ...expandedItems };
+    let changed = false;
+    
+    [mainNavigation, adminNavigation, platformNavigation].forEach(nav => {
+      nav.forEach(item => {
+        if (item.subItems) {
+          const hasActiveSub = item.subItems.some(sub => pathname?.startsWith(sub.href));
+          if (hasActiveSub && !newExpanded[item.name]) {
+            newExpanded[item.name] = true;
+            changed = true;
+          }
+        }
+      });
+    });
+
+    if (changed) {
+      setExpandedItems(newExpanded);
+    }
+  }
+
+  const toggleExpand = (name: string) => {
+    setExpandedItems(prev => ({ ...prev, [name]: !prev[name] }));
+  };
+
+  const renderNavItems = (items: NavItem[]) => (
     <ul className="space-y-1">
       {items.map((item) => {
-        // Simple active check. Can be more sophisticated if needed.
-        const isActive = pathname?.startsWith(item.href) || false;
+        const hasSubItems = !!item.subItems;
+        const isParentActive = hasSubItems 
+          ? item.subItems!.some(sub => pathname?.startsWith(sub.href)) 
+          : (item.href ? pathname?.startsWith(item.href) : false);
+        
+        const isExpanded = expandedItems[item.name] || false;
         const Icon = item.icon;
         
         return (
           <li key={item.name}>
-            <Link
-              href={item.href}
-              className={`flex items-center space-x-3 px-3 py-2.5 rounded-md text-[14px] font-medium transition-colors ${
-                isActive 
-                  ? 'bg-neutral-100/80 text-neutral-900' 
-                  : 'text-neutral-500 hover:bg-neutral-100/50 hover:text-neutral-900'
-              }`}
-            >
-              <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-neutral-900' : 'text-neutral-400'}`} />
-              <span>{item.name}</span>
-            </Link>
+            {hasSubItems ? (
+              <div>
+                <button
+                  onClick={() => toggleExpand(item.name)}
+                  aria-expanded={isExpanded}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-md text-[14px] font-medium transition-colors ${
+                    isParentActive 
+                      ? 'bg-neutral-100/80 text-neutral-900' 
+                      : 'text-neutral-500 hover:bg-neutral-100/50 hover:text-neutral-900'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Icon className={`w-[18px] h-[18px] ${isParentActive ? 'text-neutral-900' : 'text-neutral-400'}`} />
+                    <span>{item.name}</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                </button>
+                {isExpanded && (
+                  <ul className="mt-1 space-y-1 px-3">
+                    {item.subItems!.map((sub) => {
+                      const isSubActive = pathname?.startsWith(sub.href) || false;
+                      return (
+                        <li key={sub.name}>
+                          <Link
+                            href={sub.href}
+                            className={`flex items-center pl-8 py-2 rounded-md text-[13px] font-medium transition-colors ${
+                              isSubActive
+                                ? 'text-neutral-900 bg-neutral-100/50'
+                                : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100/50'
+                            }`}
+                          >
+                            <span>{sub.name}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            ) : (
+              <Link
+                href={item.href!}
+                className={`flex items-center space-x-3 px-3 py-2.5 rounded-md text-[14px] font-medium transition-colors ${
+                  isParentActive 
+                    ? 'bg-neutral-100/80 text-neutral-900' 
+                    : 'text-neutral-500 hover:bg-neutral-100/50 hover:text-neutral-900'
+                }`}
+              >
+                <Icon className={`w-[18px] h-[18px] ${isParentActive ? 'text-neutral-900' : 'text-neutral-400'}`} />
+                <span>{item.name}</span>
+              </Link>
+            )}
           </li>
         );
       })}
