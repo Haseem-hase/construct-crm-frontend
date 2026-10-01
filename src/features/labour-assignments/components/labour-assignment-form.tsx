@@ -11,20 +11,26 @@ import { FormField } from '@/src/components/ui/form-field';
 import { mockLabour } from '@/src/features/labour/data/labour.mock';
 import { mockAssignments } from '@/src/features/assignments/data/assignments.mock';
 import { mockLabourAssignments } from '@/src/features/labour-assignments/data/labour-assignments.mock';
+import { LabourAssignment } from '../types/labour-assignment.types';
 
-export function LabourAssignmentForm() {
+interface LabourAssignmentFormProps {
+  mode?: 'create' | 'edit';
+  initialData?: LabourAssignment;
+}
+
+export function LabourAssignmentForm({ mode = 'create', initialData }: LabourAssignmentFormProps) {
   const router = useRouter();
 
   // Assignment section
-  const [labourId, setLabourId] = useState('');
-  const [contractorProjectAssignmentId, setContractorProjectAssignmentId] = useState('');
+  const [labourId, setLabourId] = useState(initialData?.labourId || '');
+  const [contractorProjectAssignmentId, setContractorProjectAssignmentId] = useState(initialData?.contractorProjectAssignmentId || '');
 
   // Assignment Period
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(initialData?.startDate || '');
+  const [endDate, setEndDate] = useState(initialData?.endDate || '');
 
   // Work Details
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(initialData?.notes || '');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,7 +66,7 @@ export function LabourAssignmentForm() {
     const end = new Date(endDate);
 
     const existingAssignments = mockLabourAssignments.filter(
-      (la) => la.labourId === labourId
+      (la) => la.labourId === labourId && la.id !== initialData?.id
     );
 
     const hasOverlap = existingAssignments.some((la) => {
@@ -74,7 +80,7 @@ export function LabourAssignmentForm() {
       return 'This labour already has an assignment during the selected period.';
     }
     return null;
-  }, [labourId, startDate, endDate]);
+  }, [labourId, startDate, endDate, initialData?.id]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -121,17 +127,30 @@ export function LabourAssignmentForm() {
     // Mock API delay
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    const payload = {
-      labourId,
-      contractorProjectAssignmentId,
-      startDate,
-      endDate,
-      notes: notes.trim() || null,
-    };
+    let payload;
+    if (mode === 'create') {
+      payload = {
+        labourId,
+        contractorProjectAssignmentId,
+        startDate,
+        endDate,
+        notes: notes.trim() || null,
+      };
+    } else {
+      payload = {
+        startDate,
+        endDate,
+        notes: notes.trim() || null,
+      };
+    }
 
-    console.log(`Submitted Labour Assignment Payload:`, payload);
+    console.log(`Submitted Labour Assignment Payload (${mode}):`, payload);
 
-    router.push('/labour-assignments');
+    if (mode === 'edit' && initialData) {
+      router.push(`/labour-assignments/${initialData.id}`);
+    } else {
+      router.push('/labour-assignments');
+    }
   };
 
   return (
@@ -145,19 +164,33 @@ export function LabourAssignmentForm() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField label="Labour" required error={errors.labourId}>
-              <Select
-                options={[{ value: '', label: 'Select active labour' }, ...labourOptions]}
-                value={labourId}
-                onChange={setLabourId}
-              />
+              {mode === 'edit' && initialData ? (
+                <div className="flex flex-col h-auto min-h-10 justify-center px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-md text-[14px]">
+                  <span className="font-medium text-neutral-900 truncate">{initialData.labourName}</span>
+                  <span className="text-[12px] text-neutral-500 font-mono mt-0.5">{initialData.professionName}</span>
+                </div>
+              ) : (
+                <Select
+                  options={[{ value: '', label: 'Select active labour' }, ...labourOptions]}
+                  value={labourId}
+                  onChange={setLabourId}
+                />
+              )}
             </FormField>
 
             <FormField label="Contractor Project Assignment" required error={errors.contractorProjectAssignmentId}>
-              <Select
-                options={[{ value: '', label: 'Select an existing assignment' }, ...assignmentOptions]}
-                value={contractorProjectAssignmentId}
-                onChange={setContractorProjectAssignmentId}
-              />
+              {mode === 'edit' && initialData ? (
+                <div className="flex flex-col h-auto min-h-10 justify-center px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-md text-[14px]">
+                  <span className="font-medium text-neutral-900 truncate">{initialData.contractorName}</span>
+                  <span className="text-[12px] text-neutral-500 font-mono mt-0.5">{initialData.projectName}</span>
+                </div>
+              ) : (
+                <Select
+                  options={[{ value: '', label: 'Select an existing assignment' }, ...assignmentOptions]}
+                  value={contractorProjectAssignmentId}
+                  onChange={setContractorProjectAssignmentId}
+                />
+              )}
             </FormField>
           </div>
         </CardContent>
@@ -228,7 +261,13 @@ export function LabourAssignmentForm() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push('/labour-assignments')}
+            onClick={() => {
+              if (mode === 'edit' && initialData) {
+                router.push(`/labour-assignments/${initialData.id}`);
+              } else {
+                router.push('/labour-assignments');
+              }
+            }}
             disabled={isSubmitting}
             className="w-full sm:w-auto"
           >
@@ -241,12 +280,14 @@ export function LabourAssignmentForm() {
             disabled={!!overlapError}
             className="w-full sm:w-auto"
           >
-            {isSubmitting ? 'Saving...' : 'Assign Labour'}
+            {isSubmitting ? 'Saving...' : mode === 'edit' ? 'Save Changes' : 'Assign Labour'}
           </Button>
         </div>
-        <p className="text-center sm:text-right text-[13px] text-neutral-500">
-          New labour assignments are created with Active status.
-        </p>
+        {mode === 'create' && (
+          <p className="text-center sm:text-right text-[13px] text-neutral-500">
+            New labour assignments are created with Active status.
+          </p>
+        )}
       </div>
 
     </form>

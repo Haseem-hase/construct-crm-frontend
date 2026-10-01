@@ -8,7 +8,13 @@ import { LabourAssignmentOverview } from './labour-assignment-overview';
 import { LabourAssignmentPeriod } from './labour-assignment-period';
 import { LabourAssignmentWorkDetails } from './labour-assignment-work-details';
 
-export function LabourAssignmentDetailsClient({ assignment }: { assignment: LabourAssignment }) {
+export function LabourAssignmentDetailsClient({ assignment: initialAssignment }: { assignment: LabourAssignment }) {
+  const [assignment, setAssignment] = React.useState<LabourAssignment>(initialAssignment);
+
+  const handleUpdate = (updates: Partial<LabourAssignment>) => {
+    setAssignment((prev) => ({ ...prev, ...updates }));
+  };
+
   return (
     <div className="flex flex-col max-w-5xl mx-auto pb-16 w-full">
       <LabourAssignmentDetailsHeader assignment={assignment} />
@@ -17,10 +23,10 @@ export function LabourAssignmentDetailsClient({ assignment }: { assignment: Labo
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="flex flex-col gap-8">
           <LabourAssignmentOverview assignment={assignment} />
-          <LabourAssignmentPeriod assignment={assignment} />
+          <LabourAssignmentPeriod assignment={assignment} onUpdate={handleUpdate} />
         </div>
         <div className="flex flex-col gap-8">
-          <LabourAssignmentWorkDetails assignment={assignment} />
+          <LabourAssignmentWorkDetails assignment={assignment} onUpdate={handleUpdate} />
         </div>
       </div>
     </div>
