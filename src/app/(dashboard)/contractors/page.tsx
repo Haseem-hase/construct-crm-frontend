@@ -65,7 +65,7 @@ export default function ContractorsPage() {
   );
 
   return (
-    <div className="w-full mx-auto pb-12 min-w-0 max-w-7xl">
+    <div className="w-full mx-auto pb-12 min-w-0">
       <ContractorPageHeader />
       
       <ContractorFilters

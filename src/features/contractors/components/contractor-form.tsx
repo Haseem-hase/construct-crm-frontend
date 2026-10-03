@@ -100,6 +100,20 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
         </div>
       )}
 
+      {mode === 'edit' && initialData && (
+        <div className="bg-neutral-50 border border-neutral-200 rounded-md p-4 flex flex-col gap-1">
+          <span className="text-sm text-neutral-500 font-medium">Current Status</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[15px] font-medium text-neutral-900">
+              {initialData.status}
+            </span>
+            <span className="text-[13px] text-neutral-400">
+              Contractor status is managed from the contractor details page.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Card 1: Contractor Information */}
       <Card>
         <CardHeader>
@@ -230,7 +244,13 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push('/contractors')}
+          onClick={() => {
+            if (mode === 'edit' && initialData?.id) {
+              router.push(`/contractors/${initialData.id}`);
+            } else {
+              router.push('/contractors');
+            }
+          }}
           disabled={isSubmitting}
           className="w-full sm:w-auto"
         >

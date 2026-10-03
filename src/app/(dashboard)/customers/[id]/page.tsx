@@ -11,6 +11,8 @@ import { CustomerAddress } from '@/src/features/customers/components/customer-ad
 import { CustomerHierarchy } from '@/src/features/customers/components/customer-hierarchy';
 import { Button } from '@/src/components/ui/button';
 import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
+import { EmptyState } from '@/src/components/ui/empty-state';
+import Link from 'next/link';
 
 export default function CustomerDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -25,12 +27,18 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
 
   if (!customer) {
     return (
-      <div className="w-full mx-auto pb-8 min-w-0 flex flex-col items-center justify-center pt-24">
-        <h1 className="text-2xl font-semibold text-neutral-900 mb-2">Customer not found</h1>
-        <p className="text-neutral-500 mb-6">We couldn&apos;t find the customer you&apos;re looking for.</p>
-        <Button variant="outline" onClick={() => router.push('/customers')}>
-          Back to Customers
-        </Button>
+      <div className="w-full mx-auto pb-12 min-w-0 max-w-5xl">
+        <EmptyState 
+          title="Customers Not Found"
+          description="The customers you are looking for does not exist or has been removed."
+          action={
+            <Link href="/customers">
+              <Button variant="outline">
+                Back to Customers
+              </Button>
+            </Link>
+          }
+        />
       </div>
     );
   }
