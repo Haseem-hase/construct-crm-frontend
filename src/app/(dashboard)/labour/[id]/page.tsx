@@ -6,6 +6,8 @@ import { mockLabour } from '@/src/features/labour/data/labour.mock';
 import { LabourDetailsClient } from '@/src/features/labour/components/labour-details-client';
 import { Button } from '@/src/components/ui/button';
 import { ChevronLeft } from '@/src/components/ui/icons';
+import { EmptyState } from '@/src/components/ui/empty-state';
+import Link from 'next/link';
 
 export default function LabourDetailsPage() {
   const params = useParams();
@@ -18,15 +20,18 @@ export default function LabourDetailsPage() {
 
   if (!labour) {
     return (
-      <div className="w-full flex flex-col items-center justify-center py-20 px-4">
-        <h3 className="text-xl font-medium text-neutral-900 mb-2">Labour Not Found</h3>
-        <p className="text-neutral-500 mb-6 text-center max-w-md">
-          We couldn&apos;t find the labour record you were looking for. It may have been removed or the link is incorrect.
-        </p>
-        <Button onClick={() => router.push('/labour')}>
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          Back to Labour
-        </Button>
+      <div className="w-full mx-auto pb-12 min-w-0 max-w-5xl">
+        <EmptyState 
+          title="Labour Not Found"
+          description="The labour you are looking for does not exist or has been removed."
+          action={
+            <Link href="/labour">
+              <Button variant="outline">
+                Back to Labour
+              </Button>
+            </Link>
+          }
+        />
       </div>
     );
   }

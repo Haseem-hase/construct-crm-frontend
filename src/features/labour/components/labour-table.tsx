@@ -4,6 +4,7 @@ import { Labour } from '../types/labour.types';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/src/components/ui/table';
 import { Badge } from '@/src/components/ui/badge';
 import { Button } from '@/src/components/ui/button';
+import { Card } from '@/src/components/ui/card';
 import { Pagination } from '@/src/components/ui/pagination';
 
 interface LabourTableProps {
@@ -43,16 +44,16 @@ export function LabourTable({
 
   if (labourData.length === 0) {
     return (
-      <div className="w-full flex flex-col items-center justify-center py-16 px-4 border border-dashed border-neutral-200 rounded-xl bg-neutral-50/50">
-        <h3 className="text-lg font-medium text-neutral-900 mb-1">No labour records found</h3>
-        <p className="text-[15px] text-neutral-500 text-center">Try adjusting your search or filters.</p>
-      </div>
+      <Card className="flex flex-col items-center justify-center py-16 px-4 text-center">
+        <h3 className="text-base font-medium text-neutral-900 mb-1">No labour records found</h3>
+        <p className="text-sm text-neutral-500 mb-4">Try adjusting your search or filters.</p>
+      </Card>
     );
   }
 
   return (
     <div className="flex flex-col w-full min-w-0">
-      <div className="w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+      <Card className="w-full min-w-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -119,7 +120,7 @@ export function LabourTable({
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2 w-[140px] ml-auto">
+                    <div className="flex justify-end items-center gap-2">
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -143,7 +144,7 @@ export function LabourTable({
             })}
           </TableBody>
         </Table>
-      </div>
+      </Card>
 
       {totalPages > 1 && (
         <div className="mt-6 flex justify-end">

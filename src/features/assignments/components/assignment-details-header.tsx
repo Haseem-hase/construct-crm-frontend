@@ -6,6 +6,7 @@ import { Button } from '@/src/components/ui/button';
 import { Badge } from '@/src/components/ui/badge';
 import { Assignment } from '../types/assignment.types';
 import { AssignmentStatusActions } from './assignment-status-actions';
+import { PageHeader } from '@/src/components/ui/page-header';
 
 interface AssignmentDetailsHeaderProps {
   assignment: Assignment;
@@ -40,32 +41,12 @@ export function AssignmentDetailsHeader({ assignment, onStatusChange }: Assignme
   const router = useRouter();
 
   return (
-    <div className="flex flex-col gap-4 mb-8">
-      <div>
-        <Button 
-          variant="ghost" 
-          onClick={() => router.push('/assignments')} 
-          className="-ml-4 text-neutral-500"
-        >
-          <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Assignments
-        </Button>
-      </div>
-
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-neutral-900 mb-2">
-            Contractor Project Assignment
-          </h1>
-          <div className="flex items-center gap-3">
-            <Badge variant={getStatusVariant(assignment.status)}>
-              {getStatusLabel(assignment.status)}
-            </Badge>
-          </div>
-        </div>
-        <div className="shrink-0 flex flex-wrap items-center gap-2">
+    <PageHeader 
+      title="Contractor Project Assignment"
+      badges={<Badge variant={getStatusVariant(assignment.status)}>{getStatusLabel(assignment.status)}</Badge>}
+      backLink={{ href: '/assignments', label: 'Back to Assignments' }}
+      action={
+        <div className="flex flex-wrap items-center gap-2">
           <AssignmentStatusActions 
             status={assignment.status} 
             onStatusChange={onStatusChange} 
@@ -74,7 +55,7 @@ export function AssignmentDetailsHeader({ assignment, onStatusChange }: Assignme
             Edit Assignment
           </Button>
         </div>
-      </div>
-    </div>
+      }
+    />
   );
 }

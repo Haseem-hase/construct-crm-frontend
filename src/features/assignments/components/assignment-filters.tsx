@@ -65,13 +65,11 @@ export function AssignmentFilters({
   const contractorOptions = [{ value: '', label: 'All Contractors' }, ...uniqueContractors];
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col lg:flex-row gap-4">
-        {/* Search */}
-        <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-neutral-400" />
-          </div>
+    <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 items-start w-full">
+      <div className="flex-1 min-w-[200px] relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search className="h-4 w-4 text-neutral-400" />
+        </div>
           <Input
             type="text"
             placeholder="Search project or contractor..."
@@ -81,28 +79,30 @@ export function AssignmentFilters({
           />
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Select
-            options={statusOptions}
-            value={statusFilter}
-            onChange={(val) => onStatusChange(val as AssignmentStatus | '')}
-          />
-          <Select
-            options={projectOptions}
-            value={projectFilter}
-            onChange={onProjectChange}
-          />
-          <Select
-            options={contractorOptions}
-            value={contractorFilter}
-            onChange={onContractorChange}
-          />
-          <Button variant="outline" onClick={onReset} className="whitespace-nowrap">
-            Reset
-          </Button>
-        </div>
+      <div className="w-full sm:w-48 shrink-0">
+        <Select
+          options={statusOptions}
+          value={statusFilter}
+          onChange={(val) => onStatusChange(val as AssignmentStatus | '')}
+        />
       </div>
+      <div className="w-full sm:w-48 shrink-0">
+        <Select
+          options={projectOptions}
+          value={projectFilter}
+          onChange={onProjectChange}
+        />
+      </div>
+      <div className="w-full sm:w-48 shrink-0">
+        <Select
+          options={contractorOptions}
+          value={contractorFilter}
+          onChange={onContractorChange}
+        />
+      </div>
+      <Button variant="outline" onClick={onReset} className="w-full sm:w-auto shrink-0 whitespace-nowrap">
+        Reset
+      </Button>
     </div>
   );
 }

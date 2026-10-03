@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Assignment, AssignmentStatus } from '../types/assignment.types';
 import { Badge } from '@/src/components/ui/badge';
 import { Button } from '@/src/components/ui/button';
+import { Card } from '@/src/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/src/components/ui/table';
 
 interface AssignmentTableProps {
@@ -47,15 +48,15 @@ export function AssignmentTable({ assignments, currentPage, itemsPerPage }: Assi
 
   if (assignments.length === 0) {
     return (
-      <div className="border border-neutral-200 rounded-lg p-12 flex flex-col items-center justify-center text-center bg-white">
-        <p className="text-neutral-500 mb-2">No assignments found</p>
-        <p className="text-sm text-neutral-400">Try adjusting your filters or search term</p>
-      </div>
+      <Card className="flex flex-col items-center justify-center py-16 px-4 text-center">
+        <h3 className="text-base font-medium text-neutral-900 mb-1">No assignments found</h3>
+        <p className="text-sm text-neutral-500 mb-4">Try adjusting your filters or search term</p>
+      </Card>
     );
   }
 
   return (
-    <div className="border border-neutral-200 rounded-lg overflow-x-auto bg-white">
+    <Card className="w-full min-w-0">
       <Table>
         <TableHeader>
           <TableRow>
@@ -114,12 +115,12 @@ export function AssignmentTable({ assignments, currentPage, itemsPerPage }: Assi
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
                     <Link href={`/assignments/${assignment.id}`}>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className="w-16">
                         View
                       </Button>
                     </Link>
                     <Link href={`/assignments/${assignment.id}/edit`}>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className="w-16">
                         Edit
                       </Button>
                     </Link>
@@ -130,6 +131,6 @@ export function AssignmentTable({ assignments, currentPage, itemsPerPage }: Assi
           })}
         </TableBody>
       </Table>
-    </div>
+    </Card>
   );
 }

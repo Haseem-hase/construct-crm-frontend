@@ -87,8 +87,8 @@ export function CustomerForm({ initialData }: CustomerFormProps) {
   };
 
   return (
-    <Card className="w-full min-w-0 max-w-4xl mx-auto">
-      <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full min-w-0">
+      <Card>
         <CardHeader>
           <CardTitle>Customer Information</CardTitle>
         </CardHeader>
@@ -114,9 +114,11 @@ export function CustomerForm({ initialData }: CustomerFormProps) {
             </FormField>
           </div>
         </CardContent>
+      </Card>
 
-        <CardHeader className="border-t border-neutral-200/60 mt-2">
-          <CardTitle>Contact &amp; Address</CardTitle>
+      <Card>
+        <CardHeader>
+          <CardTitle>Contact & Address</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -183,26 +185,27 @@ export function CustomerForm({ initialData }: CustomerFormProps) {
             </div>
           </div>
         </CardContent>
+      </Card>
 
-        <CardFooter className="justify-end gap-3 bg-neutral-50/50">
-          <Button 
-            variant="outline" 
-            type="button" 
-            onClick={() => {
-              if (isEdit && initialData) {
-                router.push(`/customers/${initialData.customerCode.toLowerCase()}`);
-              } else {
-                router.push('/customers');
-              }
-            }}
-          >
-            Cancel
-          </Button>
-          <Button variant="primary" type="submit">
-            {isEdit ? 'Save Changes' : 'Create Customer'}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+        <Button 
+          variant="outline" 
+          type="button" 
+          className="w-full sm:w-auto"
+          onClick={() => {
+            if (isEdit && initialData) {
+              router.push(`/customers/${initialData.customerCode.toLowerCase()}`);
+            } else {
+              router.push('/customers');
+            }
+          }}
+        >
+          Cancel
+        </Button>
+        <Button variant="primary" type="submit" className="w-full sm:w-auto">
+          {isEdit ? 'Save Changes' : 'Create Customer'}
+        </Button>
+      </div>
+    </form>
   );
 }

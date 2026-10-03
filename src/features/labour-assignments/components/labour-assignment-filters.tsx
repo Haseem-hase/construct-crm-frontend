@@ -91,13 +91,11 @@ export function LabourAssignmentFilters({
   const projectOptions = [{ value: '', label: 'All Projects' }, ...uniqueProjects];
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col lg:flex-row gap-4">
-        {/* Search */}
-        <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-neutral-400" />
-          </div>
+    <div className="flex flex-col lg:flex-row flex-wrap gap-4 mb-6 items-start w-full">
+      <div className="flex-1 min-w-[200px] relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search className="h-4 w-4 text-neutral-400" />
+        </div>
           <Input
             type="text"
             placeholder="Search labour, contractor, or project..."
@@ -107,48 +105,44 @@ export function LabourAssignmentFilters({
           />
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row sm:flex-wrap lg:justify-end gap-3 lg:max-w-4xl">
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <Select
-              options={labourOptions}
-              value={labourFilter}
-              onChange={onLabourChange}
-            />
-          </div>
-          <div className="w-full sm:w-auto min-w-[160px]">
-            <Select
-              options={professionOptions}
-              value={professionFilter}
-              onChange={onProfessionChange}
-            />
-          </div>
-          <div className="w-full sm:w-auto min-w-[160px]">
-            <Select
-              options={contractorOptions}
-              value={contractorFilter}
-              onChange={onContractorChange}
-            />
-          </div>
-          <div className="w-full sm:w-auto min-w-[160px]">
-            <Select
-              options={projectOptions}
-              value={projectFilter}
-              onChange={onProjectChange}
-            />
-          </div>
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <Select
-              options={statusOptions}
-              value={statusFilter}
-              onChange={(val) => onStatusChange(val as LabourAssignmentStatus | '')}
-            />
-          </div>
-          <Button variant="outline" onClick={onReset} className="w-full sm:w-auto whitespace-nowrap">
-            Reset
-          </Button>
-        </div>
+      <div className="w-full sm:w-40 lg:w-48 shrink-0">
+        <Select
+          options={labourOptions}
+          value={labourFilter}
+          onChange={onLabourChange}
+        />
       </div>
+      <div className="w-full sm:w-40 lg:w-48 shrink-0">
+        <Select
+          options={professionOptions}
+          value={professionFilter}
+          onChange={onProfessionChange}
+        />
+      </div>
+      <div className="w-full sm:w-40 lg:w-48 shrink-0">
+        <Select
+          options={contractorOptions}
+          value={contractorFilter}
+          onChange={onContractorChange}
+        />
+      </div>
+      <div className="w-full sm:w-40 lg:w-48 shrink-0">
+        <Select
+          options={projectOptions}
+          value={projectFilter}
+          onChange={onProjectChange}
+        />
+      </div>
+      <div className="w-full sm:w-40 lg:w-48 shrink-0">
+        <Select
+          options={statusOptions}
+          value={statusFilter}
+          onChange={(val) => onStatusChange(val as LabourAssignmentStatus | '')}
+        />
+      </div>
+      <Button variant="outline" onClick={onReset} className="w-full sm:w-auto shrink-0 whitespace-nowrap">
+        Reset
+      </Button>
     </div>
   );
 }

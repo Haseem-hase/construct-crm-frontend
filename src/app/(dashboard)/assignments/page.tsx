@@ -61,10 +61,9 @@ export default function AssignmentsPage() {
   );
 
   return (
-    <div className="flex flex-col gap-8 pb-12">
+    <div className="w-full mx-auto pb-12 min-w-0">
       <AssignmentPageHeader />
       
-      <div className="flex flex-col gap-6">
         <AssignmentFilters
           assignments={mockAssignments}
           searchTerm={searchTerm}
@@ -94,6 +93,5 @@ export default function AssignmentsPage() {
           </div>
         )}
       </div>
-    </div>
   );
 }

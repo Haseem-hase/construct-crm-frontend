@@ -85,7 +85,7 @@ export default function CustomersPage() {
   }, [filteredCustomers, validCurrentPage]);
 
   return (
-    <div className="w-full mx-auto pb-8 min-w-0">
+    <div className="w-full mx-auto pb-12 min-w-0">
       <CustomerPageHeader />
       
       <CustomerFilters 

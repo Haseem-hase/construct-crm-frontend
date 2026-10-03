@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/src/components/ui/button';
 import { mockAssignments } from '@/src/features/assignments/data/assignments.mock';
 import { AssignmentDetailsClient } from '@/src/features/assignments/components/assignment-details-client';
+import { EmptyState } from '@/src/components/ui/empty-state';
+import Link from 'next/link';
 
 interface PageProps {
   params: Promise<{
@@ -21,12 +23,18 @@ export default function AssignmentDetailsPage({ params }: PageProps) {
 
   if (!assignment) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <h2 className="text-2xl font-semibold tracking-tight text-neutral-900 mb-2">Assignment Not Found</h2>
-        <p className="text-neutral-500 mb-6">The assignment you&apos;re looking for could not be found.</p>
-        <Button onClick={() => router.push('/assignments')}>
-          Back to Assignments
-        </Button>
+      <div className="w-full mx-auto pb-12 min-w-0 max-w-5xl">
+        <EmptyState 
+          title="Assignments Not Found"
+          description="The assignments you are looking for does not exist or has been removed."
+          action={
+            <Link href="/assignments">
+              <Button variant="outline">
+                Back to Assignments
+              </Button>
+            </Link>
+          }
+        />
       </div>
     );
   }

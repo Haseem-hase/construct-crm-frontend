@@ -2,6 +2,8 @@ import React from 'react';
 import Link from 'next/link';
 import { mockContractors } from '@/src/features/contractors/data/contractors.mock';
 import { ContractorDetailsClient } from '@/src/features/contractors/components/contractor-details-client';
+import { EmptyState } from '@/src/components/ui/empty-state';
+import { Button } from '@/src/components/ui/button';
 
 export default async function ContractorDetailsPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   // Await params to support Next.js 15+ where params is a Promise
@@ -16,12 +18,18 @@ export default async function ContractorDetailsPage({ params }: { params: Promis
 
   if (!contractor) {
     return (
-      <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
-        <h1 className="text-2xl font-semibold text-neutral-900">Contractor Not Found</h1>
-        <p className="text-neutral-500">The contractor you are looking for does not exist or has been removed.</p>
-        <Link href="/contractors" className="text-blue-600 hover:underline">
-          Return to Contractors List
-        </Link>
+      <div className="w-full mx-auto pb-12 min-w-0 max-w-5xl">
+        <EmptyState 
+          title="Contractors Not Found"
+          description="The contractors you are looking for does not exist or has been removed."
+          action={
+            <Link href="/contractors">
+              <Button variant="outline">
+                Back to Contractors
+              </Button>
+            </Link>
+          }
+        />
       </div>
     );
   }

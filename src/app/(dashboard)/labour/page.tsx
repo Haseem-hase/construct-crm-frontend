@@ -69,7 +69,7 @@ export default function LabourPage() {
   );
 
   return (
-    <div className="w-full mx-auto pb-12 min-w-0 max-w-7xl">
+    <div className="w-full mx-auto pb-12 min-w-0">
       <LabourPageHeader />
       
       <LabourFilters

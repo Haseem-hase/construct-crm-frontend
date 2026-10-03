@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { LabourAssignment, LabourAssignmentStatus } from '../types/labour-assignment.types';
 import { Badge } from '@/src/components/ui/badge';
 import { Button } from '@/src/components/ui/button';
+import { Card } from '@/src/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/src/components/ui/table';
 
 interface LabourAssignmentTableProps {
@@ -40,15 +41,15 @@ export function LabourAssignmentTable({ assignments, currentPage, itemsPerPage }
 
   if (assignments.length === 0) {
     return (
-      <div className="border border-neutral-200 rounded-lg p-12 flex flex-col items-center justify-center text-center bg-white">
-        <p className="text-neutral-500 mb-2">No labour assignments found</p>
-        <p className="text-sm text-neutral-400">Try adjusting your filters or search term</p>
-      </div>
+      <Card className="flex flex-col items-center justify-center py-16 px-4 text-center">
+        <h3 className="text-base font-medium text-neutral-900 mb-1">No labour assignments found</h3>
+        <p className="text-sm text-neutral-500 mb-4">Try adjusting your filters or search term</p>
+      </Card>
     );
   }
 
   return (
-    <div className="border border-neutral-200 rounded-lg overflow-x-auto bg-white">
+    <Card className="w-full min-w-0">
       <Table className="min-w-[900px]">
         <TableHeader>
           <TableRow>
@@ -115,12 +116,12 @@ export function LabourAssignmentTable({ assignments, currentPage, itemsPerPage }
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
                     <Link href={`/labour-assignments/${assignment.id}`}>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className="w-16">
                         View
                       </Button>
                     </Link>
                     <Link href={`/labour-assignments/${assignment.id}/edit`}>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className="w-16">
                         Edit
                       </Button>
                     </Link>
@@ -131,6 +132,6 @@ export function LabourAssignmentTable({ assignments, currentPage, itemsPerPage }
           })}
         </TableBody>
       </Table>
-    </div>
+    </Card>
   );
 }

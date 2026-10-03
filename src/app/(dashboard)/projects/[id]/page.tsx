@@ -13,6 +13,8 @@ import { ProjectContractorOverview } from '@/src/features/projects/components/pr
 import { ProjectLabourOverview } from '@/src/features/projects/components/project-labour-overview';
 import { ProjectImageGallery } from '@/src/features/projects/components/project-image-gallery';
 import { Button } from '@/src/components/ui/button';
+import { EmptyState } from '@/src/components/ui/empty-state';
+import Link from 'next/link';
 
 interface ProjectDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -31,12 +33,18 @@ export default function ProjectDetailsPage({ params }: ProjectDetailsPageProps) 
 
   if (!project) {
     return (
-      <div className="w-full mx-auto max-w-5xl py-16 flex flex-col items-center justify-center text-center">
-        <h2 className="text-2xl font-semibold text-neutral-900 mb-2">Project Not Found</h2>
-        <p className="text-neutral-500 mb-6">The project you are looking for does not exist or has been removed.</p>
-        <Button onClick={() => router.push('/projects')}>
-          Back to Projects
-        </Button>
+      <div className="w-full mx-auto pb-12 min-w-0 max-w-5xl">
+        <EmptyState 
+          title="Projects Not Found"
+          description="The projects you are looking for does not exist or has been removed."
+          action={
+            <Link href="/projects">
+              <Button variant="outline">
+                Back to Projects
+              </Button>
+            </Link>
+          }
+        />
       </div>
     );
   }

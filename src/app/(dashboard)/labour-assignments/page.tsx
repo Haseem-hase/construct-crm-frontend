@@ -65,10 +65,9 @@ export default function LabourAssignmentsPage() {
   );
 
   return (
-    <div className="flex flex-col gap-8 pb-12">
+    <div className="w-full mx-auto pb-12 min-w-0">
       <LabourAssignmentPageHeader />
       
-      <div className="flex flex-col gap-6">
         <LabourAssignmentFilters
           assignments={mockLabourAssignments}
           searchTerm={searchTerm}
@@ -102,6 +101,5 @@ export default function LabourAssignmentsPage() {
           </div>
         )}
       </div>
-    </div>
   );
 }

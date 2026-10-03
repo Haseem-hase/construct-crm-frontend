@@ -2,7 +2,9 @@ import React from 'react';
 import Link from 'next/link';
 import { mockContractors } from '@/src/features/contractors/data/contractors.mock';
 import { ContractorForm } from '@/src/features/contractors/components/contractor-form';
-import { ChevronLeft } from '@/src/components/ui/icons';
+import { PageHeader } from '@/src/components/ui/page-header';
+import { EmptyState } from '@/src/components/ui/empty-state';
+import { Button } from '@/src/components/ui/button';
 
 export default async function ContractorEditPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   const resolvedParams = await params;
@@ -16,31 +18,29 @@ export default async function ContractorEditPage({ params }: { params: Promise<{
 
   if (!contractor) {
     return (
-      <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
-        <h1 className="text-2xl font-semibold text-neutral-900">Contractor Not Found</h1>
-        <p className="text-neutral-500">The contractor you are looking for does not exist or has been removed.</p>
-        <Link href="/contractors" className="text-blue-600 hover:underline">
-          Return to Contractors List
-        </Link>
+      <div className="w-full mx-auto pb-12 min-w-0 max-w-5xl">
+        <EmptyState 
+          title="Contractors Not Found"
+          description="The contractors you are looking for does not exist or has been removed."
+          action={
+            <Link href="/contractors">
+              <Button variant="outline">
+                Back to Contractors
+              </Button>
+            </Link>
+          }
+        />
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-12 w-full">
-      <div className="flex flex-col gap-2">
-        <Link href={`/contractors/${id}`} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 flex items-center w-fit mb-2">
-          <ChevronLeft className="w-4 h-4 mr-1" />
-          Back to Contractor
-        </Link>
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl md:text-3xl font-semibold text-neutral-900">Edit Contractor</h1>
-          <span className="text-sm font-medium text-neutral-500 bg-neutral-100 px-2.5 py-1 rounded-md">
-            {contractor.contractorCode}
-          </span>
-        </div>
-      </div>
-
+    <div className="w-full mx-auto pb-12 min-w-0 max-w-4xl">
+      <PageHeader 
+        title="Edit Contractor" 
+        description={contractor.contractorCode}
+        backLink={{ href: `/contractors/${id}`, label: 'Back to Contractor' }}
+      />
       <ContractorForm mode="edit" initialData={contractor} />
     </div>
   );
