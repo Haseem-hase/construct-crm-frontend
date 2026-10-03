@@ -19,6 +19,7 @@ export interface RoleFormProps {
 export function RoleForm({ mode, initialData }: RoleFormProps) {
   const router = useRouter();
   const isEdit = mode === 'edit';
+  const isGlobal = isEdit && initialData?.type === 'GLOBAL';
   
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
@@ -42,16 +43,18 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
     const newErrors: { [key: string]: string } = {};
     const trimmedName = formData.name.trim();
     
-    if (!trimmedName) {
-      newErrors.name = 'Role name is required';
-    } else if (trimmedName.length < 2) {
-      newErrors.name = 'Role name must be at least 2 characters';
-    } else if (trimmedName.length > 50) {
-      newErrors.name = 'Role name must not exceed 50 characters';
-    }
+    if (!isGlobal) {
+      if (!trimmedName) {
+        newErrors.name = 'Role name is required';
+      } else if (trimmedName.length < 2) {
+        newErrors.name = 'Role name must be at least 2 characters';
+      } else if (trimmedName.length > 50) {
+        newErrors.name = 'Role name must not exceed 50 characters';
+      }
 
-    if (formData.description && formData.description.length > 255) {
-      newErrors.description = 'Description must not exceed 255 characters';
+      if (formData.description && formData.description.length > 255) {
+        newErrors.description = 'Description must not exceed 255 characters';
+      }
     }
     
     if (Object.keys(newErrors).length > 0) {
@@ -65,19 +68,39 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
       // Simulate 800ms API delay
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      const payload = {
-        name: trimmedName,
-        description: formData.description.trim(),
-        permissions: formData.permissions
-      };
-
-      console.log(isEdit ? 'Custom Role updated:' : 'Custom Role created:', payload);
+      if (isGlobal) {
+        const payload = {
+          id: initialData?.id,
+          permissions: formData.permissions
+        };
+        console.log('Global Role permissions configured:', payload);
+      } else {
+        const payload = {
+          ...(isEdit ? { id: initialData?.id } : {}),
+          name: trimmedName,
+          description: formData.description.trim(),
+          permissions: formData.permissions
+        };
+        console.log(isEdit ? 'Custom Role updated:' : 'Custom Role created:', payload);
+      }
       
-      router.push('/roles');
+      if (isEdit && initialData?.id) {
+        router.push(`/roles/${initialData.id}`);
+      } else {
+        router.push('/roles');
+      }
     } catch (error) {
       console.error(error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (isEdit && initialData?.id) {
+      router.push(`/roles/${initialData.id}`);
+    } else {
+      router.push('/roles');
     }
   };
 
@@ -89,13 +112,22 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-6 max-w-2xl">
-            <FormField label="Role Name" required error={errors.name}>
+            {isGlobal && (
+              <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-md">
+                <p className="text-sm text-neutral-600">
+                  <span className="font-medium text-neutral-900">Note:</span> This is a global system role. The role name and description are managed by the system. You can configure the permissions for your organization.
+                </p>
+              </div>
+            )}
+
+            <FormField label="Role Name" required={!isGlobal} error={errors.name}>
               <Input 
                 value={formData.name}
                 onChange={(e) => handleChange('name', e.target.value)}
                 placeholder="Enter role name"
                 error={!!errors.name}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isGlobal}
+                readOnly={isGlobal}
               />
             </FormField>
 
@@ -105,7 +137,8 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
                 onChange={(e) => handleChange('description', e.target.value)}
                 placeholder="Briefly describe what this role does"
                 rows={3}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isGlobal}
+                readOnly={isGlobal}
               />
             </FormField>
           </div>
@@ -132,7 +165,7 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
           type="button" 
           className="w-full sm:w-auto"
           disabled={isSubmitting}
-          onClick={() => router.push('/roles')}
+          onClick={handleCancel}
         >
           Cancel
         </Button>
@@ -142,7 +175,7 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
           className="w-full sm:w-auto"
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Saving...' : (isEdit ? 'Save Changes' : 'Create Role')}
+          {isSubmitting ? 'Saving...' : (isEdit ? (isGlobal ? 'Save Permissions' : 'Save Changes') : 'Create Role')}
         </Button>
       </div>
     </form>
