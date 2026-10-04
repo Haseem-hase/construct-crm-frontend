@@ -15,7 +15,7 @@ export const apiClient: AxiosInstance = axios.create({
 
 type Subscriber = {
   resolve: (token: string) => void;
-  reject: (error: any) => void;
+  reject: (error: unknown) => void;
 };
 
 let isRefreshing = false;
@@ -26,7 +26,7 @@ function onRefreshed(token: string) {
   refreshSubscribers = [];
 }
 
-function onRefreshFailed(error: any) {
+function onRefreshFailed(error: unknown) {
   refreshSubscribers.forEach(({ reject }) => reject(error));
   refreshSubscribers = [];
 }
@@ -78,7 +78,7 @@ apiClient.interceptors.response.use(
               }
               resolve(apiClient(originalRequest));
             },
-            reject: (err: any) => {
+            reject: (err: unknown) => {
               reject(err);
             }
           });
