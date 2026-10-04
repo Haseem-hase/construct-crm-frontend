@@ -1,17 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/use-auth';
 import axios from 'axios';
+import { SuccessAlert } from '../../../components/ui/success-alert';
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { login } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -22,9 +33,16 @@ export function LoginForm() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
+    let isSuccess = false;
+
     try {
       await login({ email, password });
-      router.push('/dashboard');
+      isSuccess = true;
+      setShowSuccessAlert(true);
+      
+      timeoutRef.current = setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         setErrorMsg(
@@ -36,12 +54,20 @@ export function LoginForm() {
         setErrorMsg('Unable to sign in. Please check your credentials and try again.');
       }
     } finally {
-      setIsSubmitting(false);
+      if (!isSuccess) {
+        setIsSubmitting(false);
+      }
     }
   };
 
   return (
     <div className="w-full max-w-[440px] mx-auto px-4 py-12">
+      <SuccessAlert 
+        show={showSuccessAlert}
+        title="Successfully signed in"
+        description="Welcome back. Redirecting you to your dashboard..."
+      />
+      
       <div className="flex flex-col items-center mb-5 text-center">
         {/* <div className="mb-8">
           <span className="text-xl font-semibold tracking-tight text-neutral-900">
