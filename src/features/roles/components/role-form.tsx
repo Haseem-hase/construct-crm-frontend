@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { FormField } from '@/src/components/ui/form-field';
@@ -8,8 +8,10 @@ import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Button } from '@/src/components/ui/button';
 import { PermissionMatrix } from './permission-matrix';
-import { mockPermissionGroups } from '../data/roles.mock';
 import { OrganizationRole } from '../types/roles.types';
+import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
+import { fetchPermissions, selectPermissions, selectPermissionsStatus, selectPermissionsError } from '../store/permissionsSlice';
+import { groupPermissionsByModule } from '../utils/roles.utils';
 
 export interface RoleFormProps {
   mode: 'create' | 'edit';
@@ -18,6 +20,7 @@ export interface RoleFormProps {
 
 export function RoleForm({ mode, initialData }: RoleFormProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const isEdit = mode === 'edit';
   const isGlobal = isEdit && initialData?.role.isGlobal;
   
@@ -29,6 +32,20 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const permissions = useAppSelector(selectPermissions);
+  const status = useAppSelector(selectPermissionsStatus);
+  const permissionsError = useAppSelector(selectPermissionsError);
+
+  useEffect(() => {
+    if (status === 'idle') {
+      dispatch(fetchPermissions());
+    }
+  }, [status, dispatch]);
+
+  const permissionGroups = useMemo(() => {
+    return groupPermissionsByModule(permissions);
+  }, [permissions]);
 
   const handleChange = (field: string, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -150,12 +167,35 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
           <CardTitle>Permissions</CardTitle>
         </CardHeader>
         <CardContent>
-          <PermissionMatrix 
-            modules={mockPermissionGroups}
-            selectedPermissionIds={formData.permissionIds}
-            mode="edit"
-            onChange={(newPermissions) => handleChange('permissionIds', newPermissions)}
-          />
+          {status === 'loading' || status === 'idle' ? (
+            <div className="flex flex-col items-center justify-center py-12 text-neutral-500">
+              <svg className="w-8 h-8 animate-spin mb-4 text-neutral-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <p>Loading permissions...</p>
+            </div>
+          ) : status === 'failed' ? (
+            <div className="p-4 rounded-md bg-red-50 text-red-700 border border-red-200">
+              <h4 className="font-medium mb-1">Error Loading Permissions</h4>
+              <p className="text-sm">{permissionsError}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-3 bg-white hover:bg-red-50 text-red-700 border-red-200 hover:border-red-300"
+                onClick={() => dispatch(fetchPermissions())}
+              >
+                Retry
+              </Button>
+            </div>
+          ) : (
+            <PermissionMatrix 
+              modules={permissionGroups}
+              selectedPermissionIds={formData.permissionIds}
+              mode="edit"
+              onChange={(newPermissions) => handleChange('permissionIds', newPermissions)}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -173,7 +213,7 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
           variant="primary" 
           type="submit" 
           className="w-full sm:w-auto"
-          disabled={isSubmitting}
+          disabled={isSubmitting || status === 'loading' || status === 'failed'}
         >
           {isSubmitting ? 'Saving...' : (isEdit ? (isGlobal ? 'Save Permissions' : 'Save Changes') : 'Create Role')}
         </Button>
