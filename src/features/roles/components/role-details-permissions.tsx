@@ -67,7 +67,7 @@ export function RoleDetailsPermissions({ role: orgRole }: RoleDetailsPermissions
                 <div className="p-4 bg-white flex flex-wrap gap-4">
                   {group.permissions.map((permission) => {
                     const isSelected = orgRole.rolePermissions?.some(rp => 
-                      rp.permission.module === permission.module && rp.permission.action === permission.action
+                      rp.permission.id === permission.id
                     );
                     
                     return (
