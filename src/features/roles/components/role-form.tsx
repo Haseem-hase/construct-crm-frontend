@@ -13,6 +13,7 @@ import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { fetchPermissions, selectPermissions, selectPermissionsStatus, selectPermissionsError } from '../store/permissionsSlice';
 import { groupPermissionsByModule } from '../utils/roles.utils';
 
+import { SuccessAlert } from '@/src/components/ui/success-alert';
 import { 
   createRole, 
   selectCreateRoleStatus, 
@@ -38,6 +39,7 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   
   const permissions = useAppSelector(selectPermissions);
   const status = useAppSelector(selectPermissionsStatus);
@@ -118,7 +120,10 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
       
       if (createRole.fulfilled.match(resultAction)) {
         // Success
-        router.push('/roles');
+        setShowSuccessAlert(true);
+        setTimeout(() => {
+          router.push('/roles');
+        }, 1500);
       } else {
         // Reject is handled by Redux state, will show error message UI below
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -138,6 +143,11 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full min-w-0">
+      <SuccessAlert 
+        title="Role created successfully" 
+        description="Your custom role has been created successfully." 
+        show={showSuccessAlert} 
+      />
       
       {createStatus === 'failed' && createError && (
         <div className="p-4 rounded-md bg-red-50 text-red-700 border border-red-200">
