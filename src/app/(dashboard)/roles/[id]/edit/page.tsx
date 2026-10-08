@@ -36,7 +36,7 @@ export default function EditRolePage() {
     };
   }, [dispatch, id]);
 
-  if (status === 'loading' || status === 'idle') {
+  if (!orgRole && (status === 'loading' || status === 'idle')) {
     return (
       <div className="w-full mx-auto pb-12 min-w-0 max-w-5xl flex flex-col items-center justify-center py-24 text-neutral-500">
         <svg className="w-8 h-8 animate-spin mb-4 text-neutral-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

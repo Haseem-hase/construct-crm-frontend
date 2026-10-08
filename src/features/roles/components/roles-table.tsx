@@ -65,7 +65,7 @@ export function RolesTable({ roles }: RolesTableProps) {
                     variant="ghost" 
                     size="sm" 
                     className="w-[84px]"
-                    onClick={() => router.push(`/roles/${orgRole.id}/edit`)}
+                    onClick={() => router.push(`/roles/${orgRole.id}/edit?from=list`)}
                   >
                     {orgRole.role.isGlobal ? 'Configure' : 'Edit'}
                   </Button>

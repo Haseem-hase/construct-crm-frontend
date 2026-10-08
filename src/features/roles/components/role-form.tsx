@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { FormField } from '@/src/components/ui/form-field';
 import { Input } from '@/src/components/ui/input';
@@ -30,7 +30,7 @@ export interface RoleFormProps {
   initialData?: OrganizationRole;
 }
 
-export function RoleForm({ mode, initialData }: RoleFormProps) {
+function RoleFormInner({ mode, initialData }: RoleFormProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const isEdit = mode === 'edit';
@@ -45,6 +45,10 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   
+  const searchParams = useSearchParams();
+  const from = searchParams.get('from');
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const permissions = useAppSelector(selectPermissions);
   const status = useAppSelector(selectPermissionsStatus);
   const permissionsError = useAppSelector(selectPermissionsError);
@@ -71,6 +75,14 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
       dispatch(resetCreateState());
     }
   }, [dispatch, isEdit]);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const permissionGroups = useMemo(() => {
     return groupPermissionsByModule(permissions);
@@ -123,8 +135,12 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
         if (updateRole.fulfilled.match(resultAction)) {
           // Success
           setShowSuccessAlert(true);
-          setTimeout(() => {
-            router.push(`/roles/${initialData!.id}`);
+          timeoutRef.current = setTimeout(() => {
+            if (from === 'list') {
+              router.push('/roles');
+            } else {
+              router.push(`/roles/${initialData!.id}`);
+            }
           }, 1500);
         } else {
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -148,7 +164,7 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
       if (createRole.fulfilled.match(resultAction)) {
         // Success
         setShowSuccessAlert(true);
-        setTimeout(() => {
+        timeoutRef.current = setTimeout(() => {
           router.push('/roles');
         }, 1500);
       } else {
@@ -286,6 +302,18 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
         </Button>
       </div>
     </form>
+  );
+}
+
+export function RoleForm(props: RoleFormProps) {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col gap-8 w-full min-w-0">
+        <div className="w-full h-[300px] animate-pulse bg-neutral-100 rounded-lg"></div>
+      </div>
+    }>
+      <RoleFormInner {...props} />
+    </Suspense>
   );
 }
 

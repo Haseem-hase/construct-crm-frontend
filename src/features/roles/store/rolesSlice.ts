@@ -120,7 +120,6 @@ const rolesSlice = createSlice({
       .addCase(fetchRoleById.pending, (state) => {
         state.detailStatus = 'loading';
         state.detailError = null;
-        state.selectedRole = null;
       })
       .addCase(fetchRoleById.fulfilled, (state, action) => {
         state.detailStatus = 'succeeded';

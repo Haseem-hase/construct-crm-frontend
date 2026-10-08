@@ -40,7 +40,7 @@ export function RoleDetailsClient({ role: orgRole }: RoleDetailsClientProps) {
                 Delete Role
               </Button>
             )}
-            <Button onClick={() => router.push(`/roles/${orgRole.id}/edit`)} variant={!isGlobal ? 'primary' : 'outline'}>
+            <Button onClick={() => router.push(`/roles/${orgRole.id}/edit?from=details`)} variant={!isGlobal ? 'primary' : 'outline'}>
               {isGlobal ? 'Configure Permissions' : 'Edit Role'}
             </Button>
           </div>
