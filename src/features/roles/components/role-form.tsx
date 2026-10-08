@@ -18,7 +18,11 @@ import {
   createRole, 
   selectCreateRoleStatus, 
   selectCreateRoleError, 
-  resetCreateState 
+  resetCreateState,
+  updateRole,
+  selectUpdateRoleStatus,
+  selectUpdateRoleError,
+  resetUpdateState
 } from '../store/rolesSlice';
 
 export interface RoleFormProps {
@@ -48,7 +52,10 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
   const createStatus = useAppSelector(selectCreateRoleStatus);
   const createError = useAppSelector(selectCreateRoleError);
 
-  const isSubmitting = createStatus === 'loading';
+  const updateStatus = useAppSelector(selectUpdateRoleStatus);
+  const updateError = useAppSelector(selectUpdateRoleError);
+
+  const isSubmitting = isEdit ? updateStatus === 'loading' : createStatus === 'loading';
 
   useEffect(() => {
     if (status === 'idle') {
@@ -57,8 +64,10 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
   }, [status, dispatch]);
 
   useEffect(() => {
-    // Reset create state when form mounts so it doesn't show old errors
-    if (!isEdit) {
+    // Reset state when form mounts
+    if (isEdit) {
+      dispatch(resetUpdateState());
+    } else {
       dispatch(resetCreateState());
     }
   }, [dispatch, isEdit]);
@@ -100,11 +109,29 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
     }
 
     if (isEdit) {
-      // Edit logic will be implemented in a future phase
-      console.log('Edit mode not fully implemented yet');
-      // Simulate 800ms API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      router.push(`/roles/${initialData?.id}`);
+      try {
+        const payload = isGlobal ? {
+          permissionIds: formData.permissionIds
+        } : {
+          name: trimmedName,
+          description: formData.description.trim() || null,
+          permissionIds: formData.permissionIds
+        };
+        
+        const resultAction = await dispatch(updateRole({ id: initialData!.id, payload }));
+        
+        if (updateRole.fulfilled.match(resultAction)) {
+          // Success
+          setShowSuccessAlert(true);
+          setTimeout(() => {
+            router.push(`/roles/${initialData!.id}`);
+          }, 1500);
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      } catch (error) {
+        console.error('Failed to update role:', error);
+      }
       return;
     }
 
@@ -144,15 +171,22 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full min-w-0">
       <SuccessAlert 
-        title="Role created successfully" 
-        description="Your custom role has been created successfully." 
+        title={isEdit ? "Role updated successfully" : "Role created successfully"}
+        description={isEdit ? "Your role changes have been saved successfully." : "Your custom role has been created successfully."}
         show={showSuccessAlert} 
       />
       
-      {createStatus === 'failed' && createError && (
+      {!isEdit && createStatus === 'failed' && createError && (
         <div className="p-4 rounded-md bg-red-50 text-red-700 border border-red-200">
           <h4 className="font-medium mb-1">Failed to Create Role</h4>
           <p className="text-sm">{createError}</p>
+        </div>
+      )}
+
+      {isEdit && updateStatus === 'failed' && updateError && (
+        <div className="p-4 rounded-md bg-red-50 text-red-700 border border-red-200">
+          <h4 className="font-medium mb-1">Failed to Update Role</h4>
+          <p className="text-sm">{updateError}</p>
         </div>
       )}
 

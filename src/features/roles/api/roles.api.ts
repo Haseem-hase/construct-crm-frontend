@@ -1,5 +1,5 @@
 import { apiClient } from '@/src/lib/api/client';
-import { GetRolesResponse, GetRoleResponse, CreateRoleRequest } from '../types/roles.types';
+import { GetRolesResponse, GetRoleResponse, CreateRoleRequest, UpdateRoleRequest } from '../types/roles.types';
 
 export const rolesApi = {
   getRoles: async (): Promise<GetRolesResponse> => {
@@ -14,6 +14,11 @@ export const rolesApi = {
 
   createRole: async (payload: CreateRoleRequest): Promise<GetRoleResponse> => {
     const response = await apiClient.post<GetRoleResponse>('/roles', payload);
+    return response.data;
+  },
+
+  updateRole: async (id: string, payload: UpdateRoleRequest): Promise<GetRoleResponse> => {
+    const response = await apiClient.patch<GetRoleResponse>(`/roles/${id}`, payload);
     return response.data;
   },
 };

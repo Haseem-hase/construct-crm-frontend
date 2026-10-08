@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { OrganizationRole, CreateRoleRequest } from '../types/roles.types';
+import { OrganizationRole, CreateRoleRequest, UpdateRoleRequest } from '../types/roles.types';
 import { rolesApi } from '../api/roles.api';
 
 export interface RolesState {
@@ -8,9 +8,11 @@ export interface RolesState {
   listStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   detailStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   createStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  updateStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   listError: string | null;
   detailError: string | null;
   createError: string | null;
+  updateError: string | null;
 }
 
 const initialState: RolesState = {
@@ -19,9 +21,11 @@ const initialState: RolesState = {
   listStatus: 'idle',
   detailStatus: 'idle',
   createStatus: 'idle',
+  updateStatus: 'idle',
   listError: null,
   detailError: null,
   createError: null,
+  updateError: null,
 };
 
 export const fetchRoles = createAsyncThunk(
@@ -62,6 +66,21 @@ export const createRole = createAsyncThunk(
   }
 );
 
+export const updateRole = createAsyncThunk(
+  'roles/updateRole',
+  async ({ id, payload }: { id: string; payload: UpdateRoleRequest }, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await rolesApi.updateRole(id, payload);
+      // Refetch the role details and the roles list to ensure relations like permissions are populated
+      dispatch(fetchRoleById(id));
+      dispatch(fetchRoles());
+      return response.data.role;
+    } catch (err: any) {
+      return rejectWithValue(err?.response?.data?.message || 'Failed to update role');
+    }
+  }
+);
+
 const rolesSlice = createSlice({
   name: 'roles',
   initialState,
@@ -74,6 +93,10 @@ const rolesSlice = createSlice({
     resetCreateState: (state) => {
       state.createStatus = 'idle';
       state.createError = null;
+    },
+    resetUpdateState: (state) => {
+      state.updateStatus = 'idle';
+      state.updateError = null;
     }
   },
   extraReducers: (builder) => {
@@ -122,10 +145,25 @@ const rolesSlice = createSlice({
         state.createStatus = 'failed';
         state.createError = (action.payload as string) || action.error.message || 'Failed to create role';
       });
+
+    // Update Reducers
+    builder
+      .addCase(updateRole.pending, (state) => {
+        state.updateStatus = 'loading';
+        state.updateError = null;
+      })
+      .addCase(updateRole.fulfilled, (state, action) => {
+        state.updateStatus = 'succeeded';
+        // We rely on fetchRoleById and fetchRoles being dispatched by the thunk to update the state
+      })
+      .addCase(updateRole.rejected, (state, action) => {
+        state.updateStatus = 'failed';
+        state.updateError = (action.payload as string) || action.error.message || 'Failed to update role';
+      });
   },
 });
 
-export const { clearSelectedRole, resetCreateState } = rolesSlice.actions;
+export const { clearSelectedRole, resetCreateState, resetUpdateState } = rolesSlice.actions;
 
 // Selectors
 export const selectRoles = (state: { roles: RolesState }) => state.roles.roles;
@@ -136,5 +174,7 @@ export const selectRolesListError = (state: { roles: RolesState }) => state.role
 export const selectRolesDetailError = (state: { roles: RolesState }) => state.roles.detailError;
 export const selectCreateRoleStatus = (state: { roles: RolesState }) => state.roles.createStatus;
 export const selectCreateRoleError = (state: { roles: RolesState }) => state.roles.createError;
+export const selectUpdateRoleStatus = (state: { roles: RolesState }) => state.roles.updateStatus;
+export const selectUpdateRoleError = (state: { roles: RolesState }) => state.roles.updateError;
 
 export default rolesSlice.reducer;
