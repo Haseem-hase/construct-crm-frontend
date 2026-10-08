@@ -8,23 +8,23 @@ import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Button } from '@/src/components/ui/button';
 import { PermissionMatrix } from './permission-matrix';
-import { mockPermissionModules } from '../data/roles.mock';
-import { Role } from '../types/roles.types';
+import { mockPermissionGroups } from '../data/roles.mock';
+import { OrganizationRole } from '../types/roles.types';
 
 export interface RoleFormProps {
   mode: 'create' | 'edit';
-  initialData?: Role;
+  initialData?: OrganizationRole;
 }
 
 export function RoleForm({ mode, initialData }: RoleFormProps) {
   const router = useRouter();
   const isEdit = mode === 'edit';
-  const isGlobal = isEdit && initialData?.type === 'GLOBAL';
+  const isGlobal = isEdit && initialData?.role.isGlobal;
   
   const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-    description: initialData?.description || '',
-    permissions: initialData?.permissions || [],
+    name: initialData?.role.name || '',
+    description: initialData?.role.description || '',
+    permissionIds: initialData?.rolePermissions?.map(rp => rp.permission.id) || [],
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -71,7 +71,7 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
       if (isGlobal) {
         const payload = {
           id: initialData?.id,
-          permissions: formData.permissions
+          permissionIds: formData.permissionIds
         };
         console.log('Global Role permissions configured:', payload);
       } else {
@@ -79,7 +79,7 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
           ...(isEdit ? { id: initialData?.id } : {}),
           name: trimmedName,
           description: formData.description.trim(),
-          permissions: formData.permissions
+          permissionIds: formData.permissionIds
         };
         console.log(isEdit ? 'Custom Role updated:' : 'Custom Role created:', payload);
       }
@@ -126,8 +126,8 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
                 onChange={(e) => handleChange('name', e.target.value)}
                 placeholder="Enter role name"
                 error={!!errors.name}
-                disabled={isSubmitting || isGlobal}
-                readOnly={isGlobal}
+                disabled={isSubmitting || !!isGlobal}
+                readOnly={!!isGlobal}
               />
             </FormField>
 
@@ -137,8 +137,8 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
                 onChange={(e) => handleChange('description', e.target.value)}
                 placeholder="Briefly describe what this role does"
                 rows={3}
-                disabled={isSubmitting || isGlobal}
-                readOnly={isGlobal}
+                disabled={isSubmitting || !!isGlobal}
+                readOnly={!!isGlobal}
               />
             </FormField>
           </div>
@@ -151,10 +151,10 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
         </CardHeader>
         <CardContent>
           <PermissionMatrix 
-            modules={mockPermissionModules}
-            selectedPermissions={formData.permissions}
+            modules={mockPermissionGroups}
+            selectedPermissionIds={formData.permissionIds}
             mode="edit"
-            onChange={(newPermissions) => handleChange('permissions', newPermissions)}
+            onChange={(newPermissions) => handleChange('permissionIds', newPermissions)}
           />
         </CardContent>
       </Card>
@@ -181,3 +181,4 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
     </form>
   );
 }
+

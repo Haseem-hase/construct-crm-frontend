@@ -1,13 +1,13 @@
 import React from 'react';
 import { Card } from '@/src/components/ui/card';
-import { Role } from '../types/roles.types';
-import { mockPermissionModules } from '../data/roles.mock';
+import { OrganizationRole } from '../types/roles.types';
+import { mockPermissionGroups } from '../data/roles.mock';
 
 interface RoleDetailsPermissionsProps {
-  role: Role;
+  role: OrganizationRole;
 }
 
-export function RoleDetailsPermissions({ role }: RoleDetailsPermissionsProps) {
+export function RoleDetailsPermissions({ role: orgRole }: RoleDetailsPermissionsProps) {
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -15,21 +15,22 @@ export function RoleDetailsPermissions({ role }: RoleDetailsPermissionsProps) {
       </div>
       
       <div className="flex flex-col gap-6">
-        {mockPermissionModules.map((module) => {
+        {mockPermissionGroups.map((group) => {
           return (
-            <div key={module.id} className="border border-neutral-200/60 rounded-lg overflow-hidden">
+            <div key={group.module} className="border border-neutral-200/60 rounded-lg overflow-hidden">
               <div className="bg-neutral-50/50 px-4 py-3 border-b border-neutral-200/60">
-                <h4 className="text-sm font-medium text-neutral-900">{module.name}</h4>
+                <h4 className="text-sm font-medium text-neutral-900">{group.module}</h4>
               </div>
               
               <div className="p-4 bg-white flex flex-wrap gap-4">
-                {module.actions.map((action) => {
-                  const permissionKey = `${module.id}:${action}`;
-                  const isSelected = role.permissions.includes(permissionKey);
+                {group.permissions.map((permission) => {
+                  const isSelected = orgRole.rolePermissions?.some(rp => 
+                    rp.permission.module === permission.module && rp.permission.action === permission.action
+                  );
                   
                   return (
                     <div 
-                      key={action} 
+                      key={permission.id} 
                       className={`
                         flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm
                         ${isSelected 
@@ -38,7 +39,6 @@ export function RoleDetailsPermissions({ role }: RoleDetailsPermissionsProps) {
                         }
                       `}
                     >
-                      {/* Using a simple SVG check or dot based on selection */}
                       {isSelected ? (
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -46,7 +46,7 @@ export function RoleDetailsPermissions({ role }: RoleDetailsPermissionsProps) {
                       ) : (
                         <div className="w-3 h-3 rounded-full border border-neutral-300" />
                       )}
-                      <span className="capitalize">{action}</span>
+                      <span className="capitalize">{permission.action.toLowerCase()}</span>
                     </div>
                   );
                 })}
@@ -58,3 +58,4 @@ export function RoleDetailsPermissions({ role }: RoleDetailsPermissionsProps) {
     </Card>
   );
 }
+

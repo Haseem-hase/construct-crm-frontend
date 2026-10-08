@@ -2,14 +2,14 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Role } from '../types/roles.types';
+import { OrganizationRole } from '../types/roles.types';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/src/components/ui/table';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { RoleTypeBadge } from './role-type-badge';
 
 interface RolesTableProps {
-  roles: Role[];
+  roles: OrganizationRole[];
 }
 
 export function RolesTable({ roles }: RolesTableProps) {
@@ -32,28 +32,24 @@ export function RolesTable({ roles }: RolesTableProps) {
             <TableHead className="min-w-[200px]">Role Name</TableHead>
             <TableHead className="w-[150px]">Type</TableHead>
             <TableHead className="min-w-[250px]">Description</TableHead>
-            <TableHead className="w-[120px] text-center">Users</TableHead>
             <TableHead className="w-[180px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {roles.map((role) => (
-            <TableRow key={role.id}>
+          {roles.map((orgRole) => (
+            <TableRow key={orgRole.id}>
               <TableCell>
-                <div className="font-medium text-neutral-900 truncate max-w-[200px]" title={role.name}>
-                  {role.name}
+                <div className="font-medium text-neutral-900 truncate max-w-[200px]" title={orgRole.role.name}>
+                  {orgRole.role.name}
                 </div>
               </TableCell>
               <TableCell>
-                <RoleTypeBadge type={role.type} />
+                <RoleTypeBadge isGlobal={orgRole.role.isGlobal} />
               </TableCell>
               <TableCell>
-                <div className="text-neutral-500 text-[14px] truncate max-w-[300px]" title={role.description}>
-                  {role.description}
+                <div className="text-neutral-500 text-[14px] truncate max-w-[300px]" title={orgRole.role.description || ''}>
+                  {orgRole.role.description || ''}
                 </div>
-              </TableCell>
-              <TableCell className="text-center">
-                <span className="text-neutral-700 tabular-nums">{role.usersAssigned}</span>
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end items-center gap-2">
@@ -61,7 +57,7 @@ export function RolesTable({ roles }: RolesTableProps) {
                     variant="ghost" 
                     size="sm" 
                     className="w-16"
-                    onClick={() => router.push(`/roles/${role.id}`)}
+                    onClick={() => router.push(`/roles/${orgRole.id}`)}
                   >
                     View
                   </Button>
@@ -69,9 +65,9 @@ export function RolesTable({ roles }: RolesTableProps) {
                     variant="ghost" 
                     size="sm" 
                     className="w-[84px]"
-                    onClick={() => router.push(`/roles/${role.id}/edit`)}
+                    onClick={() => router.push(`/roles/${orgRole.id}/edit`)}
                   >
-                    {role.type === 'GLOBAL' ? 'Configure' : 'Edit'}
+                    {orgRole.role.isGlobal ? 'Configure' : 'Edit'}
                   </Button>
                 </div>
               </TableCell>
