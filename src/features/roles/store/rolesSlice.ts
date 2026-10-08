@@ -9,10 +9,12 @@ export interface RolesState {
   detailStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   createStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   updateStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  deleteStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   listError: string | null;
   detailError: string | null;
   createError: string | null;
   updateError: string | null;
+  deleteError: string | null;
 }
 
 const initialState: RolesState = {
@@ -22,10 +24,12 @@ const initialState: RolesState = {
   detailStatus: 'idle',
   createStatus: 'idle',
   updateStatus: 'idle',
+  deleteStatus: 'idle',
   listError: null,
   detailError: null,
   createError: null,
   updateError: null,
+  deleteError: null,
 };
 
 export const fetchRoles = createAsyncThunk(
@@ -81,6 +85,18 @@ export const updateRole = createAsyncThunk(
   }
 );
 
+export const deleteRole = createAsyncThunk(
+  'roles/deleteRole',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const response = await rolesApi.deleteRole(id);
+      return { id, ...response };
+    } catch (err: any) {
+      return rejectWithValue(err?.response?.data?.message || 'Failed to delete role');
+    }
+  }
+);
+
 const rolesSlice = createSlice({
   name: 'roles',
   initialState,
@@ -97,6 +113,10 @@ const rolesSlice = createSlice({
     resetUpdateState: (state) => {
       state.updateStatus = 'idle';
       state.updateError = null;
+    },
+    resetDeleteState: (state) => {
+      state.deleteStatus = 'idle';
+      state.deleteError = null;
     }
   },
   extraReducers: (builder) => {
@@ -159,10 +179,29 @@ const rolesSlice = createSlice({
         state.updateStatus = 'failed';
         state.updateError = (action.payload as string) || action.error.message || 'Failed to update role';
       });
+
+    // Delete Reducers
+    builder
+      .addCase(deleteRole.pending, (state) => {
+        state.deleteStatus = 'loading';
+        state.deleteError = null;
+      })
+      .addCase(deleteRole.fulfilled, (state, action) => {
+        state.deleteStatus = 'succeeded';
+        state.roles = state.roles.filter(role => role.id !== action.payload.id);
+        if (state.selectedRole?.id === action.payload.id) {
+          state.selectedRole = null;
+          state.detailStatus = 'idle';
+        }
+      })
+      .addCase(deleteRole.rejected, (state, action) => {
+        state.deleteStatus = 'failed';
+        state.deleteError = (action.payload as string) || action.error.message || 'Failed to delete role';
+      });
   },
 });
 
-export const { clearSelectedRole, resetCreateState, resetUpdateState } = rolesSlice.actions;
+export const { clearSelectedRole, resetCreateState, resetUpdateState, resetDeleteState } = rolesSlice.actions;
 
 // Selectors
 export const selectRoles = (state: { roles: RolesState }) => state.roles.roles;
@@ -175,5 +214,7 @@ export const selectCreateRoleStatus = (state: { roles: RolesState }) => state.ro
 export const selectCreateRoleError = (state: { roles: RolesState }) => state.roles.createError;
 export const selectUpdateRoleStatus = (state: { roles: RolesState }) => state.roles.updateStatus;
 export const selectUpdateRoleError = (state: { roles: RolesState }) => state.roles.updateError;
+export const selectDeleteRoleStatus = (state: { roles: RolesState }) => state.roles.deleteStatus;
+export const selectDeleteRoleError = (state: { roles: RolesState }) => state.roles.deleteError;
 
 export default rolesSlice.reducer;

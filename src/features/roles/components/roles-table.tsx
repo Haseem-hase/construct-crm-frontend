@@ -7,6 +7,10 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { RoleTypeBadge } from './role-type-badge';
+import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
+import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
+import { deleteRole, selectDeleteRoleStatus, selectDeleteRoleError, resetDeleteState } from '../store/rolesSlice';
+import { SuccessAlert } from '@/src/components/ui/success-alert';
 
 interface RolesTableProps {
   roles: OrganizationRole[];
@@ -14,6 +18,41 @@ interface RolesTableProps {
 
 export function RolesTable({ roles }: RolesTableProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const [roleToDelete, setRoleToDelete] = React.useState<OrganizationRole | null>(null);
+  const [showSuccessAlert, setShowSuccessAlert] = React.useState(false);
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const deleteStatus = useAppSelector(selectDeleteRoleStatus);
+  const deleteError = useAppSelector(selectDeleteRoleError);
+
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  const handleDelete = async () => {
+    if (!roleToDelete) return;
+    
+    const resultAction = await dispatch(deleteRole(roleToDelete.id));
+    if (deleteRole.fulfilled.match(resultAction)) {
+      setRoleToDelete(null);
+      setShowSuccessAlert(true);
+      timeoutRef.current = setTimeout(() => {
+        setShowSuccessAlert(false);
+      }, 1500);
+    }
+  };
+
+  const handleCloseDialog = (open: boolean) => {
+    if (!open) {
+      if (deleteStatus !== 'loading') {
+        setRoleToDelete(null);
+        dispatch(resetDeleteState());
+      }
+    }
+  };
 
   if (roles.length === 0) {
     return (
@@ -69,12 +108,46 @@ export function RolesTable({ roles }: RolesTableProps) {
                   >
                     {orgRole.role.isGlobal ? 'Configure' : 'Edit'}
                   </Button>
+                  {!orgRole.role.isGlobal && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="w-16 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => setRoleToDelete(orgRole)}
+                    >
+                      Delete
+                    </Button>
+                  )}
+                  {orgRole.role.isGlobal && (
+                    <div className="w-16"></div>
+                  )}
                 </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      <ConfirmationDialog 
+        open={!!roleToDelete}
+        onOpenChange={handleCloseDialog}
+        title="Delete Role?"
+        description={
+          deleteError 
+            ? <span className="text-red-600">{deleteError}</span>
+            : `Are you sure you want to delete the role "${roleToDelete?.role.name}"? This action cannot be undone.`
+        }
+        confirmLabel={deleteStatus === 'loading' ? 'Deleting...' : 'Delete Role'}
+        variant="destructive"
+        onConfirm={handleDelete}
+        confirmDisabled={deleteStatus === 'loading'}
+      />
+
+      <SuccessAlert 
+        title="Role deleted successfully"
+        description="The role has been deleted successfully."
+        show={showSuccessAlert} 
+      />
     </Card>
   );
 }

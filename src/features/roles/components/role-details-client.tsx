@@ -9,6 +9,9 @@ import { RoleTypeBadge } from './role-type-badge';
 import { RoleDetailsOverview } from './role-details-overview';
 import { RoleDetailsPermissions } from './role-details-permissions';
 import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
+import { SuccessAlert } from '@/src/components/ui/success-alert';
+import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
+import { deleteRole, selectDeleteRoleStatus, selectDeleteRoleError, resetDeleteState } from '../store/rolesSlice';
 
 interface RoleDetailsClientProps {
   role: OrganizationRole;
@@ -16,13 +19,41 @@ interface RoleDetailsClientProps {
 
 export function RoleDetailsClient({ role: orgRole }: RoleDetailsClientProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [showSuccessAlert, setShowSuccessAlert] = React.useState(false);
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const deleteStatus = useAppSelector(selectDeleteRoleStatus);
+  const deleteError = useAppSelector(selectDeleteRoleError);
+
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const handleDelete = async () => {
-    // Simulate 800ms API delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    console.log('Custom Role deleted:', { id: orgRole.id, name: orgRole.role.name });
-    router.push('/roles');
+    const resultAction = await dispatch(deleteRole(orgRole.id));
+    if (deleteRole.fulfilled.match(resultAction)) {
+      setIsDeleteDialogOpen(false);
+      setShowSuccessAlert(true);
+      timeoutRef.current = setTimeout(() => {
+        setShowSuccessAlert(false);
+        router.push('/roles');
+      }, 1500);
+    }
+  };
+
+  const handleCloseDialog = (open: boolean) => {
+    if (!open) {
+      if (deleteStatus !== 'loading') {
+        setIsDeleteDialogOpen(false);
+        dispatch(resetDeleteState());
+      }
+    } else {
+      setIsDeleteDialogOpen(true);
+    }
   };
 
   const isGlobal = orgRole.role.isGlobal;
@@ -55,14 +86,25 @@ export function RoleDetailsClient({ role: orgRole }: RoleDetailsClientProps) {
       {!isGlobal && (
         <ConfirmationDialog 
           open={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
+          onOpenChange={handleCloseDialog}
           title="Delete Role?"
-          description={`Are you sure you want to delete the role "${orgRole.role.name}"? This action cannot be undone.`}
-          confirmLabel="Delete Role"
+          description={
+            deleteError 
+              ? <span className="text-red-600">{deleteError}</span>
+              : `Are you sure you want to delete the role "${orgRole.role.name}"? This action cannot be undone.`
+          }
+          confirmLabel={deleteStatus === 'loading' ? 'Deleting...' : 'Delete Role'}
           variant="destructive"
           onConfirm={handleDelete}
+          confirmDisabled={deleteStatus === 'loading'}
         />
       )}
+
+      <SuccessAlert 
+        title="Role deleted successfully"
+        description="The role has been deleted successfully."
+        show={showSuccessAlert} 
+      />
     </div>
   );
 }

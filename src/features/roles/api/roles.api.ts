@@ -21,4 +21,9 @@ export const rolesApi = {
     const response = await apiClient.patch<GetRoleResponse>(`/roles/${id}`, payload);
     return response.data;
   },
+
+  deleteRole: async (id: string): Promise<{ success: boolean; message: string; data?: any }> => {
+    const response = await apiClient.delete<{ success: boolean; message: string; data?: any }>(`/roles/${id}`);
+    return response.data;
+  },
 };
