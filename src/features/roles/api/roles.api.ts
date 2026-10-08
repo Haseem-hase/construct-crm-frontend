@@ -1,0 +1,29 @@
+import { apiClient } from '@/src/lib/api/client';
+import { GetRolesResponse, GetRoleResponse, CreateRoleRequest, UpdateRoleRequest } from '../types/roles.types';
+
+export const rolesApi = {
+  getRoles: async (): Promise<GetRolesResponse> => {
+    const response = await apiClient.get<GetRolesResponse>('/roles');
+    return response.data;
+  },
+  
+  getRole: async (id: string): Promise<GetRoleResponse> => {
+    const response = await apiClient.get<GetRoleResponse>(`/roles/${id}`);
+    return response.data;
+  },
+
+  createRole: async (payload: CreateRoleRequest): Promise<GetRoleResponse> => {
+    const response = await apiClient.post<GetRoleResponse>('/roles', payload);
+    return response.data;
+  },
+
+  updateRole: async (id: string, payload: UpdateRoleRequest): Promise<GetRoleResponse> => {
+    const response = await apiClient.patch<GetRoleResponse>(`/roles/${id}`, payload);
+    return response.data;
+  },
+
+  deleteRole: async (id: string): Promise<{ success: boolean; message: string; data?: any }> => {
+    const response = await apiClient.delete<{ success: boolean; message: string; data?: any }>(`/roles/${id}`);
+    return response.data;
+  },
+};

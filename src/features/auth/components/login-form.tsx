@@ -1,13 +1,73 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../context/use-auth';
+import axios from 'axios';
+import { SuccessAlert } from '../../../components/ui/success-alert';
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { login } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    let isSuccess = false;
+
+    try {
+      await login({ email, password });
+      isSuccess = true;
+      setShowSuccessAlert(true);
+      
+      timeoutRef.current = setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        setErrorMsg(
+          error.response?.data?.message || 'Unable to sign in. Please check your credentials and try again.'
+        );
+      } else if (error instanceof Error) {
+        setErrorMsg(error.message);
+      } else {
+        setErrorMsg('Unable to sign in. Please check your credentials and try again.');
+      }
+    } finally {
+      if (!isSuccess) {
+        setIsSubmitting(false);
+      }
+    }
+  };
 
   return (
     <div className="w-full max-w-[440px] mx-auto px-4 py-12">
+      <SuccessAlert 
+        show={showSuccessAlert}
+        title="Successfully signed in"
+        description="Welcome back. Redirecting you to your dashboard..."
+      />
+      
       <div className="flex flex-col items-center mb-5 text-center">
         {/* <div className="mb-8">
           <span className="text-xl font-semibold tracking-tight text-neutral-900">
@@ -23,17 +83,25 @@ export function LoginForm() {
       </div>
 
       <div className="bg-white sm:px-10 px-6 py-10 sm:border sm:border-neutral-200/50 sm:shadow-[0_8px_40px_rgba(0,0,0,0.04)] rounded-lg">
-        <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          {errorMsg && (
+            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-sm">
+              {errorMsg}
+            </div>
+          )}
+
           <div className="space-y-2">
             <label htmlFor="email" className="block text-sm font-medium text-neutral-700">
               Email
             </label>
             <input
               id="email"
+              name="email"
               type="email"
               placeholder="Enter your email"
-              className="w-full px-4 py-3 bg-neutral-50/50 border border-neutral-200/80 rounded-sm text-[15px] text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-neutral-900/5 focus:border-neutral-900/20 transition-all duration-200"
+              className="w-full px-4 py-3 bg-neutral-50/50 border border-neutral-200/80 rounded-sm text-[15px] text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-neutral-900/5 focus:border-neutral-900/20 transition-all duration-200 disabled:opacity-50"
               required
+              disabled={isSubmitting}
             />
           </div>
 
@@ -52,16 +120,19 @@ export function LoginForm() {
             <div className="relative">
               <input
                 id="password"
+                name="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Enter your password"
-                className="w-full px-4 py-3 bg-neutral-50/50 border border-neutral-200/80 rounded-sm text-[15px] text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-neutral-900/5 focus:border-neutral-900/20 transition-all duration-200 pr-12"
+                className="w-full px-4 py-3 bg-neutral-50/50 border border-neutral-200/80 rounded-sm text-[15px] text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-neutral-900/5 focus:border-neutral-900/20 transition-all duration-200 pr-12 disabled:opacity-50"
                 required
+                disabled={isSubmitting}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none p-1.5 rounded-sm transition-colors"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
+                disabled={isSubmitting}
               >
                 {showPassword ? (
                   <svg
@@ -102,9 +173,10 @@ export function LoginForm() {
 
           <button
             type="submit"
-            className="w-full mt-4 bg-neutral-900 text-white rounded-sm py-3.5 text-[15px] font-medium hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-900/10 transition-all active:scale-[0.98]"
+            className="w-full mt-4 bg-neutral-900 text-white rounded-sm py-3.5 text-[15px] font-medium hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-900/10 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+            disabled={isSubmitting}
           >
-            Sign In
+            {isSubmitting ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
       </div>

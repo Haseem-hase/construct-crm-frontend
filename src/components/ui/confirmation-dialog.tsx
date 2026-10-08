@@ -7,13 +7,14 @@ import { Button } from './button';
 export interface ConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
+  title: React.ReactNode;
+  description: React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: 'primary' | 'destructive' | 'default';
   onConfirm: () => void | Promise<void>;
   onCancel?: () => void;
+  confirmDisabled?: boolean;
 }
 
 export function ConfirmationDialog({
@@ -26,6 +27,7 @@ export function ConfirmationDialog({
   variant = 'primary',
   onConfirm,
   onCancel,
+  confirmDisabled = false,
 }: ConfirmationDialogProps) {
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -65,7 +67,7 @@ export function ConfirmationDialog({
         <Button 
           variant={buttonVariant} 
           onClick={handleConfirm} 
-          disabled={isConfirming}
+          disabled={isConfirming || confirmDisabled}
           className="w-full sm:w-auto"
         >
           {isConfirming ? `${confirmLabel.replace(/e$/, '')}ing...` : confirmLabel}

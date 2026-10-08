@@ -1,34 +1,92 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { FormField } from '@/src/components/ui/form-field';
 import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Button } from '@/src/components/ui/button';
 import { PermissionMatrix } from './permission-matrix';
-import { mockPermissionModules } from '../data/roles.mock';
-import { Role } from '../types/roles.types';
+import { OrganizationRole } from '../types/roles.types';
+import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
+import { fetchPermissions, selectPermissions, selectPermissionsStatus, selectPermissionsError } from '../store/permissionsSlice';
+import { groupPermissionsByModule } from '../utils/roles.utils';
+
+import { SuccessAlert } from '@/src/components/ui/success-alert';
+import { 
+  createRole, 
+  selectCreateRoleStatus, 
+  selectCreateRoleError, 
+  resetCreateState,
+  updateRole,
+  selectUpdateRoleStatus,
+  selectUpdateRoleError,
+  resetUpdateState
+} from '../store/rolesSlice';
 
 export interface RoleFormProps {
   mode: 'create' | 'edit';
-  initialData?: Role;
+  initialData?: OrganizationRole;
 }
 
-export function RoleForm({ mode, initialData }: RoleFormProps) {
+function RoleFormInner({ mode, initialData }: RoleFormProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const isEdit = mode === 'edit';
-  const isGlobal = isEdit && initialData?.type === 'GLOBAL';
+  const isGlobal = isEdit && initialData?.role.isGlobal;
   
   const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-    description: initialData?.description || '',
-    permissions: initialData?.permissions || [],
+    name: initialData?.role.name || '',
+    description: initialData?.role.description || '',
+    permissionIds: initialData?.rolePermissions?.map(rp => rp.permission.id) || [],
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  
+  const searchParams = useSearchParams();
+  const from = searchParams.get('from');
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const permissions = useAppSelector(selectPermissions);
+  const status = useAppSelector(selectPermissionsStatus);
+  const permissionsError = useAppSelector(selectPermissionsError);
+
+  const createStatus = useAppSelector(selectCreateRoleStatus);
+  const createError = useAppSelector(selectCreateRoleError);
+
+  const updateStatus = useAppSelector(selectUpdateRoleStatus);
+  const updateError = useAppSelector(selectUpdateRoleError);
+
+  const isSubmitting = isEdit ? updateStatus === 'loading' : createStatus === 'loading';
+
+  useEffect(() => {
+    if (status === 'idle') {
+      dispatch(fetchPermissions());
+    }
+  }, [status, dispatch]);
+
+  useEffect(() => {
+    // Reset state when form mounts
+    if (isEdit) {
+      dispatch(resetUpdateState());
+    } else {
+      dispatch(resetCreateState());
+    }
+  }, [dispatch, isEdit]);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const permissionGroups = useMemo(() => {
+    return groupPermissionsByModule(permissions);
+  }, [permissions]);
 
   const handleChange = (field: string, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -62,37 +120,59 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
       return;
     }
 
-    setIsSubmitting(true);
-
-    try {
-      // Simulate 800ms API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      if (isGlobal) {
-        const payload = {
-          id: initialData?.id,
-          permissions: formData.permissions
-        };
-        console.log('Global Role permissions configured:', payload);
-      } else {
-        const payload = {
-          ...(isEdit ? { id: initialData?.id } : {}),
+    if (isEdit) {
+      try {
+        const payload = isGlobal ? {
+          permissionIds: formData.permissionIds
+        } : {
           name: trimmedName,
-          description: formData.description.trim(),
-          permissions: formData.permissions
+          description: formData.description.trim() || null,
+          permissionIds: formData.permissionIds
         };
-        console.log(isEdit ? 'Custom Role updated:' : 'Custom Role created:', payload);
+        
+        const resultAction = await dispatch(updateRole({ id: initialData!.id, payload }));
+        
+        if (updateRole.fulfilled.match(resultAction)) {
+          // Success
+          setShowSuccessAlert(true);
+          timeoutRef.current = setTimeout(() => {
+            if (from === 'list') {
+              router.push('/roles');
+            } else {
+              router.push(`/roles/${initialData!.id}`);
+            }
+          }, 1500);
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      } catch (error) {
+        console.error('Failed to update role:', error);
       }
+      return;
+    }
+
+    // Create mode
+    try {
+      const payload = {
+        name: trimmedName,
+        description: formData.description.trim() || undefined,
+        permissionIds: formData.permissionIds
+      };
       
-      if (isEdit && initialData?.id) {
-        router.push(`/roles/${initialData.id}`);
+      const resultAction = await dispatch(createRole(payload));
+      
+      if (createRole.fulfilled.match(resultAction)) {
+        // Success
+        setShowSuccessAlert(true);
+        timeoutRef.current = setTimeout(() => {
+          router.push('/roles');
+        }, 1500);
       } else {
-        router.push('/roles');
+        // Reject is handled by Redux state, will show error message UI below
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (error) {
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
+      console.error('Failed to create role:', error);
     }
   };
 
@@ -106,6 +186,26 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full min-w-0">
+      <SuccessAlert 
+        title={isEdit ? "Role updated successfully" : "Role created successfully"}
+        description={isEdit ? "Your role changes have been saved successfully." : "Your custom role has been created successfully."}
+        show={showSuccessAlert} 
+      />
+      
+      {!isEdit && createStatus === 'failed' && createError && (
+        <div className="p-4 rounded-md bg-red-50 text-red-700 border border-red-200">
+          <h4 className="font-medium mb-1">Failed to Create Role</h4>
+          <p className="text-sm">{createError}</p>
+        </div>
+      )}
+
+      {isEdit && updateStatus === 'failed' && updateError && (
+        <div className="p-4 rounded-md bg-red-50 text-red-700 border border-red-200">
+          <h4 className="font-medium mb-1">Failed to Update Role</h4>
+          <p className="text-sm">{updateError}</p>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Role Information</CardTitle>
@@ -126,8 +226,8 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
                 onChange={(e) => handleChange('name', e.target.value)}
                 placeholder="Enter role name"
                 error={!!errors.name}
-                disabled={isSubmitting || isGlobal}
-                readOnly={isGlobal}
+                disabled={isSubmitting || !!isGlobal}
+                readOnly={!!isGlobal}
               />
             </FormField>
 
@@ -137,8 +237,8 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
                 onChange={(e) => handleChange('description', e.target.value)}
                 placeholder="Briefly describe what this role does"
                 rows={3}
-                disabled={isSubmitting || isGlobal}
-                readOnly={isGlobal}
+                disabled={isSubmitting || !!isGlobal}
+                readOnly={!!isGlobal}
               />
             </FormField>
           </div>
@@ -150,12 +250,35 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
           <CardTitle>Permissions</CardTitle>
         </CardHeader>
         <CardContent>
-          <PermissionMatrix 
-            modules={mockPermissionModules}
-            selectedPermissions={formData.permissions}
-            mode="edit"
-            onChange={(newPermissions) => handleChange('permissions', newPermissions)}
-          />
+          {status === 'loading' || status === 'idle' ? (
+            <div className="flex flex-col items-center justify-center py-12 text-neutral-500">
+              <svg className="w-8 h-8 animate-spin mb-4 text-neutral-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <p>Loading permissions...</p>
+            </div>
+          ) : status === 'failed' ? (
+            <div className="p-4 rounded-md bg-red-50 text-red-700 border border-red-200">
+              <h4 className="font-medium mb-1">Error Loading Permissions</h4>
+              <p className="text-sm">{permissionsError}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-3 bg-white hover:bg-red-50 text-red-700 border-red-200 hover:border-red-300"
+                onClick={() => dispatch(fetchPermissions())}
+              >
+                Retry
+              </Button>
+            </div>
+          ) : (
+            <PermissionMatrix 
+              modules={permissionGroups}
+              selectedPermissionIds={formData.permissionIds}
+              mode="edit"
+              onChange={(newPermissions) => handleChange('permissionIds', newPermissions)}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -173,7 +296,7 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
           variant="primary" 
           type="submit" 
           className="w-full sm:w-auto"
-          disabled={isSubmitting}
+          disabled={isSubmitting || status === 'loading' || status === 'failed'}
         >
           {isSubmitting ? 'Saving...' : (isEdit ? (isGlobal ? 'Save Permissions' : 'Save Changes') : 'Create Role')}
         </Button>
@@ -181,3 +304,16 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
     </form>
   );
 }
+
+export function RoleForm(props: RoleFormProps) {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col gap-8 w-full min-w-0">
+        <div className="w-full h-[300px] animate-pulse bg-neutral-100 rounded-lg"></div>
+      </div>
+    }>
+      <RoleFormInner {...props} />
+    </Suspense>
+  );
+}
+
