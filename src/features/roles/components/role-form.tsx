@@ -13,6 +13,13 @@ import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { fetchPermissions, selectPermissions, selectPermissionsStatus, selectPermissionsError } from '../store/permissionsSlice';
 import { groupPermissionsByModule } from '../utils/roles.utils';
 
+import { 
+  createRole, 
+  selectCreateRoleStatus, 
+  selectCreateRoleError, 
+  resetCreateState 
+} from '../store/rolesSlice';
+
 export interface RoleFormProps {
   mode: 'create' | 'edit';
   initialData?: OrganizationRole;
@@ -31,17 +38,28 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  
   const permissions = useAppSelector(selectPermissions);
   const status = useAppSelector(selectPermissionsStatus);
   const permissionsError = useAppSelector(selectPermissionsError);
+
+  const createStatus = useAppSelector(selectCreateRoleStatus);
+  const createError = useAppSelector(selectCreateRoleError);
+
+  const isSubmitting = createStatus === 'loading';
 
   useEffect(() => {
     if (status === 'idle') {
       dispatch(fetchPermissions());
     }
   }, [status, dispatch]);
+
+  useEffect(() => {
+    // Reset create state when form mounts so it doesn't show old errors
+    if (!isEdit) {
+      dispatch(resetCreateState());
+    }
+  }, [dispatch, isEdit]);
 
   const permissionGroups = useMemo(() => {
     return groupPermissionsByModule(permissions);
@@ -79,37 +97,34 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
       return;
     }
 
-    setIsSubmitting(true);
-
-    try {
+    if (isEdit) {
+      // Edit logic will be implemented in a future phase
+      console.log('Edit mode not fully implemented yet');
       // Simulate 800ms API delay
       await new Promise(resolve => setTimeout(resolve, 800));
+      router.push(`/roles/${initialData?.id}`);
+      return;
+    }
 
-      if (isGlobal) {
-        const payload = {
-          id: initialData?.id,
-          permissionIds: formData.permissionIds
-        };
-        console.log('Global Role permissions configured:', payload);
-      } else {
-        const payload = {
-          ...(isEdit ? { id: initialData?.id } : {}),
-          name: trimmedName,
-          description: formData.description.trim(),
-          permissionIds: formData.permissionIds
-        };
-        console.log(isEdit ? 'Custom Role updated:' : 'Custom Role created:', payload);
-      }
+    // Create mode
+    try {
+      const payload = {
+        name: trimmedName,
+        description: formData.description.trim() || undefined,
+        permissionIds: formData.permissionIds
+      };
       
-      if (isEdit && initialData?.id) {
-        router.push(`/roles/${initialData.id}`);
-      } else {
+      const resultAction = await dispatch(createRole(payload));
+      
+      if (createRole.fulfilled.match(resultAction)) {
+        // Success
         router.push('/roles');
+      } else {
+        // Reject is handled by Redux state, will show error message UI below
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (error) {
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
+      console.error('Failed to create role:', error);
     }
   };
 
@@ -123,6 +138,14 @@ export function RoleForm({ mode, initialData }: RoleFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full min-w-0">
+      
+      {createStatus === 'failed' && createError && (
+        <div className="p-4 rounded-md bg-red-50 text-red-700 border border-red-200">
+          <h4 className="font-medium mb-1">Failed to Create Role</h4>
+          <p className="text-sm">{createError}</p>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Role Information</CardTitle>
