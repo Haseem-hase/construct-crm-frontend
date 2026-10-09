@@ -89,7 +89,7 @@ apiClient.interceptors.response.use(
 
       try {
         const response = await authApi.refresh({ refreshToken });
-        const { accessToken, refreshToken: newRefreshToken } = response;
+        const { accessToken, refreshToken: newRefreshToken } = response.data;
         
         setTokens(accessToken, newRefreshToken);
         onRefreshed(accessToken);
