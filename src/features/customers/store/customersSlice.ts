@@ -80,7 +80,7 @@ export const createCustomer = createAsyncThunk(
     try {
       const response = await customersApi.createCustomer(payload);
       dispatch(fetchCustomers());
-      return response.data.customer;
+      return { customer: response.data.customer, message: response.message };
     } catch (err: any) {
       return rejectWithValue(err?.response?.data?.message || 'Failed to create customer');
     }
