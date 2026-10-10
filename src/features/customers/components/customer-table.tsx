@@ -115,7 +115,7 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
                       variant="ghost" 
                       size="sm" 
                       className="w-16"
-                      onClick={() => router.push(`/customers/${customer.customerCode.toLowerCase()}`)}
+                      onClick={() => router.push(`/customers/${customer.id}`)}
                     >
                       View
                     </Button>
@@ -123,7 +123,7 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
                       variant="ghost" 
                       size="sm" 
                       className="w-16"
-                      onClick={() => router.push(`/customers/${customer.customerCode.toLowerCase()}/edit`)}
+                      onClick={() => router.push(`/customers/${customer.id}/edit`)}
                     >
                       Edit
                     </Button>
