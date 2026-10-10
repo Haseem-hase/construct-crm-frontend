@@ -36,7 +36,7 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
 
   const handleConfirmStatus = () => {
     if (!targetCustomer) return;
-    const newStatus = targetCustomer.status === 'Active' ? 'Inactive' : 'Active';
+    const newStatus = targetCustomer.isActive ? 'Inactive' : 'Active';
     onUpdateStatus(targetCustomer.id, newStatus);
     setTargetCustomer(null);
   };
@@ -62,7 +62,6 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
             <TableHead>Customer</TableHead>
             <TableHead>Code</TableHead>
             <TableHead>Type</TableHead>
-            <TableHead>Contact</TableHead>
             <TableHead>Location</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
@@ -100,17 +99,11 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
                   <span className="text-neutral-600">{capitalize(customer.type)}</span>
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-col text-neutral-600 text-[13px] space-y-0.5">
-                    <span>{customer.email}</span>
-                    <span>{customer.phone}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
                   <span className="text-neutral-600">{customer.city}</span>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={customer.status === 'Active' ? 'success' : 'neutral'}>
-                    {customer.status}
+                  <Badge variant={customer.isActive ? 'success' : 'neutral'}>
+                    {customer.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -138,9 +131,9 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
                       variant="ghost" 
                       size="sm" 
                       onClick={() => setTargetCustomer(customer)}
-                      className={`w-24 ${customer.status === 'Active' ? 'text-red-600 hover:text-red-700 hover:bg-red-50' : 'text-neutral-900'}`}
+                      className={`w-24 ${customer.isActive ? 'text-red-600 hover:text-red-700 hover:bg-red-50' : 'text-neutral-900'}`}
                     >
-                      {customer.status === 'Active' ? 'Deactivate' : 'Activate'}
+                      {customer.isActive ? 'Deactivate' : 'Activate'}
                     </Button>
                   </div>
                 </TableCell>
@@ -152,10 +145,10 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
       <ConfirmationDialog
         open={!!targetCustomer}
         onOpenChange={(open) => !open && setTargetCustomer(null)}
-        title={targetCustomer?.status === 'Active' ? 'Deactivate customer?' : 'Activate customer?'}
-        description={`Are you sure you want to ${targetCustomer?.status === 'Active' ? 'deactivate' : 'activate'} ${targetCustomer?.name}?`}
-        confirmLabel={targetCustomer?.status === 'Active' ? 'Deactivate' : 'Activate'}
-        variant={targetCustomer?.status === 'Active' ? 'destructive' : 'primary'}
+        title={targetCustomer?.isActive ? 'Deactivate customer?' : 'Activate customer?'}
+        description={`Are you sure you want to ${targetCustomer?.isActive ? 'deactivate' : 'activate'} ${targetCustomer?.name}?`}
+        confirmLabel={targetCustomer?.isActive ? 'Deactivate' : 'Activate'}
+        variant={targetCustomer?.isActive ? 'destructive' : 'primary'}
         onConfirm={handleConfirmStatus}
       />
     </Card>

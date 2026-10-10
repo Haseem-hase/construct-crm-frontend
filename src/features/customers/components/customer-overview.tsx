@@ -56,7 +56,7 @@ export function CustomerOverview({ customer, onUpdate }: { customer: Customer, o
             label="Status" 
             value={
               <InlineEdit 
-                value={customer.status} 
+                value={customer.isActive ? 'Active' : 'Inactive'} 
                 onSave={(val) => onUpdate('status', val)} 
                 editor="select"
                 options={[

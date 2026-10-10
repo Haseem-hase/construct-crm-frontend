@@ -16,7 +16,7 @@ export function CustomerContactInformation({ customer, onUpdate }: { customer: C
             label="Email" 
             value={
               <InlineEdit 
-                value={customer.email} 
+                value={customer.email || 'N/A'} 
                 onSave={(val) => onUpdate('email', val)} 
                 editor="email"
               />
@@ -26,7 +26,7 @@ export function CustomerContactInformation({ customer, onUpdate }: { customer: C
             label="Phone" 
             value={
               <InlineEdit 
-                value={customer.phone} 
+                value={customer.phone || 'N/A'} 
                 onSave={(val) => onUpdate('phone', val)} 
                 editor="phone"
               />

@@ -59,7 +59,7 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
       <CustomerDetailsHeader 
         name={customer.name} 
         code={customer.customerCode} 
-        status={customer.status} 
+        status={customer.isActive ? 'Active' : 'Inactive'} 
         onActivateToggle={() => setIsConfirmOpen(true)}
       />
       
