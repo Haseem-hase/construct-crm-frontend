@@ -11,7 +11,7 @@ const typeLabels: Record<string, string> = {
   OTHER: 'Other',
 };
 
-export function CustomerOverview({ customer, onUpdate }: { customer: Customer, onUpdate: (field: keyof Customer, value: string) => void }) {
+export function CustomerOverview({ customer, onUpdate }: { customer: Customer, onUpdate: (field: keyof Customer, value: string) => Promise<boolean | void> | boolean | void }) {
   const formattedDate = new Date(customer.createdAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',

@@ -1,11 +1,12 @@
 'use client';
 
-import React, { use, useEffect, useState } from 'react';
+import React, { use, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { 
   fetchCustomerById, 
   fetchCustomerChildren,
+  updateCustomer,
   selectSelectedCustomer, 
   selectCustomersDetailStatus, 
   selectCustomersDetailError,
@@ -14,7 +15,7 @@ import {
   selectCustomerChildrenStatus,
   selectCustomers
 } from '@/src/features/customers/store/customersSlice';
-import { Customer } from '@/src/features/customers/types/customer.types';
+import { Customer, CustomerType, UpdateCustomerRequest } from '@/src/features/customers/types/customer.types';
 import { CustomerDetailsHeader } from '@/src/features/customers/components/customer-details-header';
 import { CustomerOverview } from '@/src/features/customers/components/customer-overview';
 import { CustomerContactInformation } from '@/src/features/customers/components/customer-contact-information';
@@ -23,6 +24,7 @@ import { CustomerHierarchy } from '@/src/features/customers/components/customer-
 import { Button } from '@/src/components/ui/button';
 import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
 import { EmptyState } from '@/src/components/ui/empty-state';
+import { SuccessAlert } from '@/src/components/ui/success-alert';
 import Link from 'next/link';
 
 export default function CustomerDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -39,8 +41,16 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
   const allCustomers = useAppSelector(selectCustomers);
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [pageError, setPageError] = useState<string | null>(null);
+  const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const activeCustomerIdRef = useRef<string>(resolvedParams.id);
 
   useEffect(() => {
+    activeCustomerIdRef.current = resolvedParams.id;
+    setPageError(null);
+    setShowSuccessAlert(false);
     // Clear the previous customer and fetch the new one
     dispatch(clearSelectedCustomer());
     if (resolvedParams.id) {
@@ -48,6 +58,14 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
       dispatch(fetchCustomerChildren(resolvedParams.id));
     }
   }, [dispatch, resolvedParams.id]);
+
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (status === 'loading' || status === 'idle') {
     return (
@@ -88,14 +106,97 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
 
   if (!customer) return null; // Safe fallback
 
-  const handleUpdate = (field: keyof Customer, value: string | boolean) => {
-    // Real updates are deferred to Phase 6. For now just log.
-    console.log(`Update ${field} to ${value} is not integrated in this phase.`);
+  const handleUpdate = async (field: keyof Customer, value: string | boolean): Promise<boolean> => {
+    if (!customer || !resolvedParams.id) return false;
+    setPageError(null);
+
+    // Contact management fields belong to Customer Contacts and are not integrated in this phase
+    if (field === 'email' || field === 'phone' || field === 'alternativePhone') {
+      const msg = 'Contact management (email and phone) is not integrated in this phase. Customer Contacts will be integrated in a later phase.';
+      setPageError(msg);
+      throw new Error(msg);
+    }
+
+    const targetId = customer.id;
+    let payloadField: UpdateCustomerRequest = {};
+
+    if (field === 'name') {
+      const trimmed = typeof value === 'string' ? value.trim() : '';
+      if (!trimmed) throw new Error('Customer name is required.');
+      if (trimmed.length < 2) throw new Error('Customer name must be at least 2 characters.');
+      if (trimmed.length > 150) throw new Error('Customer name must not exceed 150 characters.');
+      payloadField = { name: trimmed };
+    } else if (field === 'type') {
+      if (!['COMPANY', 'GOVERNMENT', 'INDIVIDUAL', 'OTHER'].includes(value as string)) {
+        throw new Error('Invalid customer type.');
+      }
+      payloadField = { type: value as CustomerType };
+    } else if (field === 'status' || field === 'isActive') {
+      const isActive = typeof value === 'boolean' ? value : value === 'Active';
+      payloadField = { isActive };
+    } else if (field === 'country') {
+      const trimmed = typeof value === 'string' ? value.trim() : '';
+      if (!trimmed) throw new Error('Country is required.');
+      if (trimmed.length > 100) throw new Error('Country must not exceed 100 characters.');
+      payloadField = { country: trimmed };
+    } else if (field === 'city') {
+      const trimmed = typeof value === 'string' ? value.trim() : '';
+      if (!trimmed) throw new Error('City is required.');
+      if (trimmed.length > 100) throw new Error('City must not exceed 100 characters.');
+      payloadField = { city: trimmed };
+    } else if (field === 'address') {
+      const trimmed = typeof value === 'string' ? value.trim() : '';
+      if (trimmed.length > 255) throw new Error('Address must not exceed 255 characters.');
+      payloadField = { address: trimmed || undefined };
+    } else {
+      return false;
+    }
+
+    // Preserve existing customer values to prevent accidental resets
+    const payload: UpdateCustomerRequest = {
+      name: customer.name,
+      type: customer.type,
+      country: customer.country || undefined,
+      city: customer.city,
+      address: customer.address || undefined,
+      parentCustomerId: customer.parentCustomerId || undefined,
+      isActive: customer.isActive ?? true,
+      ...payloadField,
+    };
+
+    const resultAction = await dispatch(updateCustomer({ id: targetId, payload }));
+
+    // Prevent stale response from updating UI if navigating between customer IDs
+    if (activeCustomerIdRef.current !== targetId) {
+      return false;
+    }
+
+    if (updateCustomer.fulfilled.match(resultAction)) {
+      const backendMessage = (resultAction.payload as any)?.message || 'Customer updated successfully.';
+      setSuccessMessage(backendMessage);
+      setShowSuccessAlert(true);
+      if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+      successTimeoutRef.current = setTimeout(() => {
+        setShowSuccessAlert(false);
+      }, 3000);
+      return true;
+    } else {
+      const errorMsg =
+        (resultAction.payload as string) ||
+        resultAction.error?.message ||
+        'Failed to update customer.';
+      setPageError(errorMsg);
+      throw new Error(errorMsg);
+    }
   };
 
-  const handleToggleStatus = () => {
-    console.log('Status toggle not integrated in this phase');
+  const handleToggleStatus = async () => {
     setIsConfirmOpen(false);
+    try {
+      await handleUpdate('status', !customer.isActive);
+    } catch {
+      // Error handled inside handleUpdate
+    }
   };
 
   const parentCustomer = customer.parentCustomerId 
@@ -104,6 +205,31 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="w-full mx-auto pb-8 min-w-0 mt-6">
+      <SuccessAlert 
+        show={showSuccessAlert} 
+        title="Customer Updated" 
+        description={successMessage} 
+      />
+
+      {pageError && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex justify-between items-start">
+          <div>
+            <h3 className="font-medium text-sm">Failed to update customer</h3>
+            <p className="text-sm mt-0.5">{pageError}</p>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => setPageError(null)} 
+            className="text-red-500 hover:text-red-700 ml-4 p-0.5"
+            aria-label="Dismiss error"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       <CustomerDetailsHeader 
         id={customer.id}
         name={customer.name} 
@@ -113,12 +239,12 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
       />
       
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
-        <CustomerOverview customer={customer} onUpdate={handleUpdate as any} />
-        <CustomerContactInformation customer={customer} onUpdate={handleUpdate as any} />
+        <CustomerOverview customer={customer} onUpdate={handleUpdate} />
+        <CustomerContactInformation customer={customer} onUpdate={handleUpdate} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
-        <CustomerAddress customer={customer} onUpdate={handleUpdate as any} />
+        <CustomerAddress customer={customer} onUpdate={handleUpdate} />
         <CustomerHierarchy 
           customer={customer} 
           parentName={parentCustomer?.name}

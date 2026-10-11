@@ -4,7 +4,7 @@ import { InlineEdit } from '@/src/components/ui/inline-edit';
 import { Customer } from '../types/customer.types';
 import { CustomerDetailItem } from './customer-detail-item';
 
-export function CustomerAddress({ customer, onUpdate }: { customer: Customer, onUpdate: (field: keyof Customer, value: string) => void }) {
+export function CustomerAddress({ customer, onUpdate }: { customer: Customer, onUpdate: (field: keyof Customer, value: string) => Promise<boolean | void> | boolean | void }) {
   return (
     <Card className="w-full min-w-0 h-full">
       <CardHeader>

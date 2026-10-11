@@ -4,7 +4,7 @@ import { InlineEdit } from '@/src/components/ui/inline-edit';
 import { Customer } from '../types/customer.types';
 import { CustomerDetailItem } from './customer-detail-item';
 
-export function CustomerContactInformation({ customer, onUpdate }: { customer: Customer, onUpdate: (field: keyof Customer, value: string) => void }) {
+export function CustomerContactInformation({ customer, onUpdate }: { customer: Customer, onUpdate: (field: keyof Customer, value: string) => Promise<boolean | void> | boolean | void }) {
   return (
     <Card className="w-full min-w-0 h-full">
       <CardHeader>
@@ -16,7 +16,8 @@ export function CustomerContactInformation({ customer, onUpdate }: { customer: C
             label="Email" 
             value={
               <InlineEdit 
-                value={customer.email || 'N/A'} 
+                value={customer.email || ''} 
+                displayValue={customer.email || 'N/A'}
                 onSave={(val) => onUpdate('email', val)} 
                 editor="email"
               />
@@ -26,7 +27,8 @@ export function CustomerContactInformation({ customer, onUpdate }: { customer: C
             label="Phone" 
             value={
               <InlineEdit 
-                value={customer.phone || 'N/A'} 
+                value={customer.phone || ''} 
+                displayValue={customer.phone || 'N/A'}
                 onSave={(val) => onUpdate('phone', val)} 
                 editor="phone"
               />
