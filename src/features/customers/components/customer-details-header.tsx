@@ -7,13 +7,14 @@ import { Badge } from '@/src/components/ui/badge';
 import { PageHeader } from '@/src/components/ui/page-header';
 
 interface CustomerDetailsHeaderProps {
+  id?: string;
   name: string;
   code: string;
   status: 'Active' | 'Inactive';
   onActivateToggle: () => void;
 }
 
-export function CustomerDetailsHeader({ name, code, status, onActivateToggle }: CustomerDetailsHeaderProps) {
+export function CustomerDetailsHeader({ id, name, code, status, onActivateToggle }: CustomerDetailsHeaderProps) {
   const router = useRouter();
 
   return (
@@ -24,7 +25,7 @@ export function CustomerDetailsHeader({ name, code, status, onActivateToggle }: 
       backLink={{ href: '/customers', label: 'Back to Customers' }}
       action={
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button onClick={() => router.push(`/customers/${code.toLowerCase()}/edit`)} variant="outline">
+          <Button onClick={() => router.push(`/customers/${id || code.toLowerCase()}/edit`)} variant="outline">
             Edit Customer
           </Button>
           <Button 

@@ -94,9 +94,13 @@ export const updateCustomer = createAsyncThunk(
       const response = await customersApi.updateCustomer(id, payload);
       dispatch(fetchCustomerById(id));
       dispatch(fetchCustomers());
-      return response.data.customer;
+      return { customer: response.data.customer, message: response.message };
     } catch (err: any) {
-      return rejectWithValue(err?.response?.data?.message || 'Failed to update customer');
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.errors?.[0]?.message ||
+        'Failed to update customer';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -206,8 +210,12 @@ const customersSlice = createSlice({
         state.updateStatus = 'loading';
         state.updateError = null;
       })
-      .addCase(updateCustomer.fulfilled, (state) => {
+      .addCase(updateCustomer.fulfilled, (state, action) => {
         state.updateStatus = 'succeeded';
+        state.updateError = null;
+        if (action.payload?.customer) {
+          state.selectedCustomer = action.payload.customer;
+        }
       })
       .addCase(updateCustomer.rejected, (state, action) => {
         state.updateStatus = 'failed';

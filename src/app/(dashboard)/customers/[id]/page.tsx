@@ -105,6 +105,7 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
   return (
     <div className="w-full mx-auto pb-8 min-w-0 mt-6">
       <CustomerDetailsHeader 
+        id={customer.id}
         name={customer.name} 
         code={customer.customerCode} 
         status={customer.isActive ? 'Active' : 'Inactive'} 
