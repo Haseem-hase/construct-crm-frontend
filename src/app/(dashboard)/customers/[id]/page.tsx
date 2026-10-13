@@ -17,7 +17,8 @@ import {
   selectCustomers,
   selectDeleteCustomerStatus,
   selectDeleteCustomerError,
-  resetDeleteState
+  resetDeleteState,
+  clearContacts
 } from '@/src/features/customers/store/customersSlice';
 import { Customer, CustomerType, UpdateCustomerRequest } from '@/src/features/customers/types/customer.types';
 import { CustomerDetailsHeader } from '@/src/features/customers/components/customer-details-header';
@@ -76,6 +77,7 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
     dispatch(resetDeleteState());
     // Clear the previous customer and fetch the new one
     dispatch(clearSelectedCustomer());
+    dispatch(clearContacts());
     if (resolvedParams.id) {
       dispatch(fetchCustomerById(resolvedParams.id));
       dispatch(fetchCustomerChildren(resolvedParams.id));
@@ -86,6 +88,7 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
     return () => {
       activeCustomerIdRef.current = '';
       isNavigatingAwayRef.current = true;
+      dispatch(clearContacts());
       if (successTimeoutRef.current) {
         clearTimeout(successTimeoutRef.current);
       }
@@ -93,7 +96,7 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
         clearTimeout(deleteTimeoutRef.current);
       }
     };
-  }, []);
+  }, [dispatch]);
 
   if (!displayCustomer && (status === 'loading' || status === 'idle')) {
     return (

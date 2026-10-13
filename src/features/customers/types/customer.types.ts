@@ -52,3 +52,61 @@ export interface GetCustomerResponse {
     customer: Customer;
   };
 }
+
+export interface CustomerContact {
+  id: string;
+  customerId: string;
+  name: string;
+  designation: string;
+  phone: string;
+  otherPhone?: string | null;
+  email: string;
+  profileImageUrl?: string | null;
+  isPrimary: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCustomerContactRequest {
+  name: string;
+  designation: string;
+  phone: string;
+  email: string;
+  otherPhone?: string;
+  profileImageUrl?: string;
+  isPrimary?: boolean;
+}
+
+export interface UpdateCustomerContactRequest {
+  name?: string;
+  designation?: string;
+  phone?: string;
+  email?: string;
+  otherPhone?: string;
+  profileImageUrl?: string;
+  isPrimary?: boolean;
+}
+
+export interface GetCustomerContactsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    contacts: CustomerContact[];
+  };
+}
+
+export interface GetCustomerContactResponse {
+  success: boolean;
+  message: string;
+  data: {
+    contact: CustomerContact;
+  };
+}
+
+export interface DeleteCustomerContactResponse {
+  success: boolean;
+  message: string;
+  data: {
+    message: string;
+  };
+}
