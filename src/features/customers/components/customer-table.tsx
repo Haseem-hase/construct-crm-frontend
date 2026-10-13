@@ -20,7 +20,7 @@ interface CustomerTableProps {
   customers: Customer[];
   allCustomers: Customer[];
   onClearFilters: () => void;
-  onUpdateStatus: (id: string, status: CustomerStatus) => void;
+  onUpdateStatus: (id: string, status: CustomerStatus) => Promise<void> | void;
   currentPage?: number;
   itemsPerPage?: number;
 }
@@ -57,11 +57,15 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
     };
   }, []);
 
-  const handleConfirmStatus = () => {
+  const handleConfirmStatus = async () => {
     if (!targetCustomer) return;
     const newStatus = targetCustomer.isActive ? 'Inactive' : 'Active';
-    onUpdateStatus(targetCustomer.id, newStatus);
-    setTargetCustomer(null);
+    try {
+      await onUpdateStatus(targetCustomer.id, newStatus);
+      setTargetCustomer(null);
+    } catch {
+      // Keep dialog open if onUpdateStatus threw so user sees error and can retry
+    }
   };
 
   const handleDeleteCustomer = async () => {

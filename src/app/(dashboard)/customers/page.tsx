@@ -7,8 +7,9 @@ import { CustomerTable } from '@/src/features/customers/components/customer-tabl
 import { CustomerType, CustomerStatus } from '@/src/features/customers/types/customer.types';
 import { Pagination } from '@/src/components/ui/pagination';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
-import { fetchCustomers, selectCustomers, selectCustomersListStatus, selectCustomersListError } from '@/src/features/customers/store/customersSlice';
+import { fetchCustomers, updateCustomer, selectCustomers, selectCustomersListStatus, selectCustomersListError } from '@/src/features/customers/store/customersSlice';
 import { Button } from '@/src/components/ui/button';
+import { SuccessAlert } from '@/src/components/ui/success-alert';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -79,9 +80,38 @@ export default function CustomersPage() {
     });
   }, [searchQuery, typeFilter, statusFilter, customers]);
 
-  // We are not implementing update in this phase
-  const handleUpdateStatus = (id: string, newStatus: CustomerStatus) => {
-    console.log('Update status not implemented in this phase');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const alertTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (alertTimeoutRef.current) clearTimeout(alertTimeoutRef.current);
+    };
+  }, []);
+
+  const handleUpdateStatus = async (id: string, newStatus: CustomerStatus): Promise<void> => {
+    setActionError(null);
+    const isActive = newStatus === 'Active';
+    const resultAction = await dispatch(updateCustomer({ id, payload: { isActive } }));
+
+    if (updateCustomer.fulfilled.match(resultAction)) {
+      const msg = resultAction.payload?.message || `Customer status updated to ${newStatus}.`;
+      setSuccessMessage(msg);
+      setShowSuccessAlert(true);
+      if (alertTimeoutRef.current) clearTimeout(alertTimeoutRef.current);
+      alertTimeoutRef.current = setTimeout(() => {
+        setShowSuccessAlert(false);
+      }, 3000);
+    } else {
+      const errorMsg =
+        (resultAction.payload as string) ||
+        resultAction.error?.message ||
+        'Failed to update customer status.';
+      setActionError(errorMsg);
+      throw new Error(errorMsg);
+    }
   };
 
   const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE));
@@ -101,6 +131,31 @@ export default function CustomersPage() {
   return (
     <div className="w-full mx-auto pb-12 min-w-0">
       <CustomerPageHeader />
+
+      <SuccessAlert 
+        show={showSuccessAlert} 
+        title="Customer Status Updated" 
+        description={successMessage} 
+      />
+
+      {actionError && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex justify-between items-start">
+          <div>
+            <h3 className="font-medium text-sm">Failed to update status</h3>
+            <p className="text-sm mt-0.5">{actionError}</p>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => setActionError(null)} 
+            className="text-red-500 hover:text-red-700 ml-4 p-0.5"
+            aria-label="Dismiss error"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
       
       {status === 'loading' || status === 'idle' ? (
         <div className="flex flex-col items-center justify-center py-16 text-neutral-500 bg-white border border-neutral-200 rounded-lg">
