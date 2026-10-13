@@ -8,15 +8,18 @@ import { Badge } from '@/src/components/ui/badge';
 import { Dialog } from '@/src/components/ui/dialog';
 import { FormField } from '@/src/components/ui/form-field';
 import { Input } from '@/src/components/ui/input';
-import { Customer, CreateCustomerContactRequest } from '../types/customer.types';
+import { Customer, CustomerContact, CreateCustomerContactRequest, UpdateCustomerContactRequest } from '../types/customer.types';
 import {
   fetchCustomerContacts,
   createCustomerContact,
+  updateCustomerContact,
   selectCustomerContacts,
   selectCustomerContactsStatus,
   selectCustomerContactsError,
   selectCreateContactStatus,
   selectCreateContactError,
+  selectUpdateContactStatus,
+  selectUpdateContactError,
   resetContactMutationStates,
 } from '../store/customersSlice';
 
@@ -30,9 +33,14 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
   const contacts = useAppSelector(selectCustomerContacts);
   const status = useAppSelector(selectCustomerContactsStatus);
   const error = useAppSelector(selectCustomerContactsError);
+  
   const createStatus = useAppSelector(selectCreateContactStatus);
   const createError = useAppSelector(selectCreateContactError);
+  
+  const updateStatus = useAppSelector(selectUpdateContactStatus);
+  const updateError = useAppSelector(selectUpdateContactError);
 
+  // Add Contact Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -44,12 +52,24 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
   });
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
+  // Edit Contact Modal State
+  const [editingContact, setEditingContact] = useState<CustomerContact | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    designation: '',
+    email: '',
+    phone: '',
+    otherPhone: '',
+  });
+  const [editValidationErrors, setEditValidationErrors] = useState<{ [key: string]: string }>({});
+
   useEffect(() => {
     if (customer?.id) {
       dispatch(fetchCustomerContacts(customer.id));
     }
   }, [customer?.id, dispatch]);
 
+  // Add Contact Handlers
   const handleOpenAddModal = () => {
     setFormData({
       name: '',
@@ -81,16 +101,19 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (createStatus === 'loading') return;
-
+  const validateContactFields = (data: {
+    name: string;
+    designation: string;
+    email: string;
+    phone: string;
+    otherPhone: string;
+  }) => {
     const errors: { [key: string]: string } = {};
-    const trimmedName = formData.name.trim();
-    const trimmedDesignation = formData.designation.trim();
-    const trimmedEmail = formData.email.trim();
-    const trimmedPhone = formData.phone.trim();
-    const trimmedOtherPhone = formData.otherPhone.trim();
+    const trimmedName = data.name.trim();
+    const trimmedDesignation = data.designation.trim();
+    const trimmedEmail = data.email.trim();
+    const trimmedPhone = data.phone.trim();
+    const trimmedOtherPhone = data.otherPhone.trim();
 
     if (!trimmedName) {
       errors.name = 'Contact name is required.';
@@ -126,17 +149,35 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
       errors.otherPhone = 'Other phone number must not exceed 30 characters.';
     }
 
+    return {
+      errors,
+      values: {
+        name: trimmedName,
+        designation: trimmedDesignation,
+        email: trimmedEmail,
+        phone: trimmedPhone,
+        otherPhone: trimmedOtherPhone,
+      },
+    };
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (createStatus === 'loading') return;
+
+    const { errors, values } = validateContactFields(formData);
+
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       return;
     }
 
     const payload: CreateCustomerContactRequest = {
-      name: trimmedName,
-      designation: trimmedDesignation,
-      email: trimmedEmail,
-      phone: trimmedPhone,
-      ...(trimmedOtherPhone ? { otherPhone: trimmedOtherPhone } : {}),
+      name: values.name,
+      designation: values.designation,
+      email: values.email,
+      phone: values.phone,
+      ...(values.otherPhone ? { otherPhone: values.otherPhone } : {}),
       isPrimary: formData.isPrimary,
     };
 
@@ -149,6 +190,69 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
 
     if (createCustomerContact.fulfilled.match(action)) {
       handleCloseAddModal();
+    }
+  };
+
+  // Edit Contact Handlers
+  const handleOpenEditModal = (contact: CustomerContact) => {
+    setEditingContact(contact);
+    setEditFormData({
+      name: contact.name || '',
+      designation: contact.designation || '',
+      email: contact.email || '',
+      phone: contact.phone || '',
+      otherPhone: contact.otherPhone || '',
+    });
+    setEditValidationErrors({});
+    dispatch(resetContactMutationStates());
+  };
+
+  const handleCloseEditModal = () => {
+    setEditingContact(null);
+    setEditValidationErrors({});
+    dispatch(resetContactMutationStates());
+  };
+
+  const handleEditInputChange = (field: string, value: string) => {
+    setEditFormData((prev) => ({ ...prev, [field]: value }));
+    if (editValidationErrors[field]) {
+      setEditValidationErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingContact || updateStatus === 'loading') return;
+
+    const { errors, values } = validateContactFields(editFormData);
+
+    if (Object.keys(errors).length > 0) {
+      setEditValidationErrors(errors);
+      return;
+    }
+
+    const payload: UpdateCustomerContactRequest = {
+      name: values.name,
+      designation: values.designation,
+      email: values.email,
+      phone: values.phone,
+      otherPhone: values.otherPhone || undefined,
+    };
+
+    const action = await dispatch(
+      updateCustomerContact({
+        customerId: customer.id,
+        contactId: editingContact.id,
+        payload,
+      })
+    );
+
+    if (updateCustomerContact.fulfilled.match(action)) {
+      handleCloseEditModal();
     }
   };
 
@@ -234,11 +338,22 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
                       </h4>
                       <p className="text-xs text-neutral-500 mt-0.5">{contact.designation}</p>
                     </div>
-                    {contact.isPrimary && (
-                      <Badge variant="success" className="text-[10px] px-2 py-0.5">
-                        Primary
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {contact.isPrimary && (
+                        <Badge variant="success" className="text-[10px] px-2 py-0.5">
+                          Primary
+                        </Badge>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenEditModal(contact)}
+                        className="text-[11px] h-6 px-2 text-neutral-600 hover:text-neutral-900 border-neutral-200 hover:bg-neutral-100"
+                      >
+                        Edit
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-1 text-xs text-neutral-600 mt-3 pt-3 border-t border-neutral-100">
@@ -279,6 +394,7 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
         </CardContent>
       </Card>
 
+      {/* Add Contact Modal */}
       <Dialog
         open={isAddModalOpen}
         onOpenChange={(open) => !open && handleCloseAddModal()}
@@ -379,6 +495,102 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
               disabled={createStatus === 'loading'}
             >
               {createStatus === 'loading' ? 'Saving...' : 'Add Contact'}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
+      {/* Edit Contact Modal */}
+      <Dialog
+        open={!!editingContact}
+        onOpenChange={(open) => !open && handleCloseEditModal()}
+        title="Edit Customer Contact"
+        description="Update the contact person's details."
+      >
+        <form onSubmit={handleEditSubmit} className="flex flex-col gap-4 mt-2">
+          {updateStatus === 'failed' && updateError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
+              {updateError}
+            </div>
+          )}
+
+          <FormField label="Contact Person Name" required error={editValidationErrors.name}>
+            <Input
+              value={editFormData.name}
+              onChange={(e) => handleEditInputChange('name', e.target.value)}
+              placeholder="e.g. John Doe"
+              error={!!editValidationErrors.name}
+              disabled={updateStatus === 'loading'}
+            />
+          </FormField>
+
+          <FormField label="Designation" required error={editValidationErrors.designation}>
+            <Input
+              value={editFormData.designation}
+              onChange={(e) => handleEditInputChange('designation', e.target.value)}
+              placeholder="e.g. Procurement Manager"
+              error={!!editValidationErrors.designation}
+              disabled={updateStatus === 'loading'}
+            />
+          </FormField>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FormField label="Email Address" required error={editValidationErrors.email}>
+              <Input
+                type="email"
+                value={editFormData.email}
+                onChange={(e) => handleEditInputChange('email', e.target.value)}
+                placeholder="john@example.com"
+                error={!!editValidationErrors.email}
+                disabled={updateStatus === 'loading'}
+              />
+            </FormField>
+
+            <FormField label="Phone Number" required error={editValidationErrors.phone}>
+              <Input
+                type="tel"
+                value={editFormData.phone}
+                onChange={(e) => handleEditInputChange('phone', e.target.value)}
+                placeholder="+966 50 123 4567"
+                error={!!editValidationErrors.phone}
+                disabled={updateStatus === 'loading'}
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Other Phone (Optional)" error={editValidationErrors.otherPhone}>
+            <Input
+              type="tel"
+              value={editFormData.otherPhone}
+              onChange={(e) => handleEditInputChange('otherPhone', e.target.value)}
+              placeholder="+966 50 765 4321"
+              error={!!editValidationErrors.otherPhone}
+              disabled={updateStatus === 'loading'}
+            />
+          </FormField>
+
+          {editingContact?.isPrimary && (
+            <div className="flex items-center gap-2 pt-1 text-xs text-neutral-500">
+              <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+              <span>This is currently the primary contact.</span>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-neutral-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCloseEditModal}
+              disabled={updateStatus === 'loading'}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={updateStatus === 'loading'}
+            >
+              {updateStatus === 'loading' ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </form>
