@@ -68,6 +68,7 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
 
   useEffect(() => {
     activeCustomerIdRef.current = resolvedParams.id;
+    isNavigatingAwayRef.current = false;
     cachedCustomerRef.current = null;
     setPageError(null);
     setShowSuccessAlert(false);
