@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/ca
 import { Button } from '@/src/components/ui/button';
 import { Badge } from '@/src/components/ui/badge';
 import { Dialog } from '@/src/components/ui/dialog';
+import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
 import { FormField } from '@/src/components/ui/form-field';
 import { Input } from '@/src/components/ui/input';
 import { Customer, CustomerContact, CreateCustomerContactRequest, UpdateCustomerContactRequest } from '../types/customer.types';
@@ -13,6 +14,7 @@ import {
   fetchCustomerContacts,
   createCustomerContact,
   updateCustomerContact,
+  deleteCustomerContact,
   selectCustomerContacts,
   selectCustomerContactsStatus,
   selectCustomerContactsError,
@@ -20,6 +22,8 @@ import {
   selectCreateContactError,
   selectUpdateContactStatus,
   selectUpdateContactError,
+  selectDeleteContactStatus,
+  selectDeleteContactError,
   resetContactMutationStates,
 } from '../store/customersSlice';
 
@@ -39,6 +43,9 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
   
   const updateStatus = useAppSelector(selectUpdateContactStatus);
   const updateError = useAppSelector(selectUpdateContactError);
+
+  const deleteStatus = useAppSelector(selectDeleteContactStatus);
+  const deleteError = useAppSelector(selectDeleteContactError);
 
   // Add Contact Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -62,6 +69,9 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
     otherPhone: '',
   });
   const [editValidationErrors, setEditValidationErrors] = useState<{ [key: string]: string }>({});
+
+  // Delete Contact State
+  const [contactToDelete, setContactToDelete] = useState<CustomerContact | null>(null);
 
   useEffect(() => {
     if (customer?.id) {
@@ -256,6 +266,43 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
     }
   };
 
+  // Delete Contact Handlers
+  const handleOpenDeleteDialog = (contact: CustomerContact) => {
+    setContactToDelete(contact);
+    dispatch(resetContactMutationStates());
+  };
+
+  const handleCloseDeleteDialog = (open: boolean) => {
+    if (!open) {
+      if (deleteStatus !== 'loading') {
+        setContactToDelete(null);
+        dispatch(resetContactMutationStates());
+      }
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!contactToDelete || deleteStatus === 'loading') return;
+
+    const action = await dispatch(
+      deleteCustomerContact({
+        customerId: customer.id,
+        contactId: contactToDelete.id,
+      })
+    );
+
+    if (deleteCustomerContact.fulfilled.match(action)) {
+      setContactToDelete(null);
+      dispatch(resetContactMutationStates());
+    } else {
+      const errorMsg =
+        (action.payload as string) ||
+        action.error?.message ||
+        'Failed to delete contact.';
+      throw new Error(errorMsg);
+    }
+  };
+
   return (
     <>
       <Card className="w-full min-w-0 h-full">
@@ -352,6 +399,15 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
                         className="text-[11px] h-6 px-2 text-neutral-600 hover:text-neutral-900 border-neutral-200 hover:bg-neutral-100"
                       >
                         Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenDeleteDialog(contact)}
+                        className="text-[11px] h-6 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-neutral-200"
+                      >
+                        Delete
                       </Button>
                     </div>
                   </div>
@@ -595,6 +651,38 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
           </div>
         </form>
       </Dialog>
+
+      {/* Delete Contact Confirmation Dialog */}
+      <ConfirmationDialog
+        open={!!contactToDelete}
+        onOpenChange={handleCloseDeleteDialog}
+        title="Delete customer contact?"
+        description={
+          deleteError ? (
+            <div className="flex flex-col gap-2">
+              <span className="text-red-600 font-medium">{deleteError}</span>
+              <span className="text-neutral-500 text-xs">You may retry or cancel.</span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 text-sm text-neutral-600">
+              <span>
+                Are you sure you want to delete contact{' '}
+                <strong className="text-neutral-900 font-semibold">"{contactToDelete?.name}"</strong>{' '}
+                ({contactToDelete?.designation})? This will permanently remove this contact from this customer.
+              </span>
+              {contactToDelete?.isPrimary && (
+                <span className="text-amber-700 bg-amber-50 p-2 rounded border border-amber-200 text-xs font-medium">
+                  Notice: This is currently marked as the primary contact for this customer.
+                </span>
+              )}
+            </div>
+          )
+        }
+        confirmLabel={deleteStatus === 'loading' ? 'Deleting...' : 'Delete Contact'}
+        variant="destructive"
+        onConfirm={handleConfirmDelete}
+        confirmDisabled={deleteStatus === 'loading'}
+      />
     </>
   );
 }
