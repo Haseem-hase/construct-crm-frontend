@@ -6,7 +6,15 @@ import { Badge } from '@/src/components/ui/badge';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
+import { SuccessAlert } from '@/src/components/ui/success-alert';
 import { CustomerStatus } from '../types/customer.types';
+import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
+import { 
+  deleteCustomer, 
+  selectDeleteCustomerStatus, 
+  selectDeleteCustomerError, 
+  resetDeleteState 
+} from '../store/customersSlice';
 
 interface CustomerTableProps {
   customers: Customer[];
@@ -32,13 +40,52 @@ function capitalize(str: string) {
 
 export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdateStatus, currentPage = 1, itemsPerPage = 10 }: CustomerTableProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [targetCustomer, setTargetCustomer] = React.useState<Customer | null>(null);
+  const [customerToDelete, setCustomerToDelete] = React.useState<Customer | null>(null);
+  const [showSuccessAlert, setShowSuccessAlert] = React.useState(false);
+  const [successMessage, setSuccessMessage] = React.useState('');
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const deleteStatus = useAppSelector(selectDeleteCustomerStatus);
+  const deleteError = useAppSelector(selectDeleteCustomerError);
+  const isDeleting = deleteStatus === 'loading';
+
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const handleConfirmStatus = () => {
     if (!targetCustomer) return;
     const newStatus = targetCustomer.isActive ? 'Inactive' : 'Active';
     onUpdateStatus(targetCustomer.id, newStatus);
     setTargetCustomer(null);
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!customerToDelete || isDeleting) return;
+
+    const resultAction = await dispatch(deleteCustomer(customerToDelete.id));
+
+    if (deleteCustomer.fulfilled.match(resultAction)) {
+      const msg = (resultAction.payload as any)?.message || 'Customer deleted successfully.';
+      setCustomerToDelete(null);
+      dispatch(resetDeleteState());
+      setSuccessMessage(msg);
+      setShowSuccessAlert(true);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        setShowSuccessAlert(false);
+      }, 3000);
+    } else {
+      const errorMsg =
+        (resultAction.payload as string) ||
+        resultAction.error?.message ||
+        'Failed to delete customer.';
+      throw new Error(errorMsg);
+    }
   };
 
   if (customers.length === 0) {
@@ -132,8 +179,21 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
                       size="sm" 
                       onClick={() => setTargetCustomer(customer)}
                       className={`w-24 ${customer.isActive ? 'text-red-600 hover:text-red-700 hover:bg-red-50' : 'text-neutral-900'}`}
+                      disabled={isDeleting}
                     >
                       {customer.isActive ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="w-16 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => {
+                        dispatch(resetDeleteState());
+                        setCustomerToDelete(customer);
+                      }}
+                      disabled={isDeleting}
+                    >
+                      Delete
                     </Button>
                   </div>
                 </TableCell>
@@ -150,6 +210,35 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
         confirmLabel={targetCustomer?.isActive ? 'Deactivate' : 'Activate'}
         variant={targetCustomer?.isActive ? 'destructive' : 'primary'}
         onConfirm={handleConfirmStatus}
+      />
+      <ConfirmationDialog
+        open={!!customerToDelete}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) {
+            setCustomerToDelete(null);
+            dispatch(resetDeleteState());
+          }
+        }}
+        title="Delete customer?"
+        description={
+          deleteError ? (
+            <div className="flex flex-col gap-2">
+              <span className="text-red-600 font-medium">{deleteError}</span>
+              <span className="text-neutral-500 text-xs">You may retry or cancel.</span>
+            </div>
+          ) : (
+            `Are you sure you want to delete "${customerToDelete?.name}" (${customerToDelete?.customerCode})? This action cannot be undone.`
+          )
+        }
+        confirmLabel={isDeleting ? 'Deleting...' : 'Delete Customer'}
+        variant="destructive"
+        onConfirm={handleDeleteCustomer}
+        confirmDisabled={isDeleting}
+      />
+      <SuccessAlert 
+        show={showSuccessAlert} 
+        title="Customer Deleted" 
+        description={successMessage} 
       />
     </Card>
   );

@@ -7,13 +7,17 @@ import {
   fetchCustomerById, 
   fetchCustomerChildren,
   updateCustomer,
+  deleteCustomer,
   selectSelectedCustomer, 
   selectCustomersDetailStatus, 
   selectCustomersDetailError,
   clearSelectedCustomer,
   selectChildCustomers,
   selectCustomerChildrenStatus,
-  selectCustomers
+  selectCustomers,
+  selectDeleteCustomerStatus,
+  selectDeleteCustomerError,
+  resetDeleteState
 } from '@/src/features/customers/store/customersSlice';
 import { Customer, CustomerType, UpdateCustomerRequest } from '@/src/features/customers/types/customer.types';
 import { CustomerDetailsHeader } from '@/src/features/customers/components/customer-details-header';
@@ -40,17 +44,35 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
   const childrenStatus = useAppSelector(selectCustomerChildrenStatus);
   const allCustomers = useAppSelector(selectCustomers);
 
+  const deleteStatus = useAppSelector(selectDeleteCustomerStatus);
+  const deleteError = useAppSelector(selectDeleteCustomerError);
+  const isDeleting = deleteStatus === 'loading';
+
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [deleteSuccessMessage, setDeleteSuccessMessage] = useState('');
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const activeCustomerIdRef = useRef<string>(resolvedParams.id);
+  const isNavigatingAwayRef = useRef<boolean>(false);
+  const cachedCustomerRef = useRef<Customer | null>(null);
+
+  if (customer) {
+    cachedCustomerRef.current = customer;
+  }
+  const displayCustomer = customer || (showDeleteSuccess || isNavigatingAwayRef.current ? cachedCustomerRef.current : null);
 
   useEffect(() => {
     activeCustomerIdRef.current = resolvedParams.id;
+    cachedCustomerRef.current = null;
     setPageError(null);
     setShowSuccessAlert(false);
+    setShowDeleteSuccess(false);
+    dispatch(resetDeleteState());
     // Clear the previous customer and fetch the new one
     dispatch(clearSelectedCustomer());
     if (resolvedParams.id) {
@@ -62,13 +84,17 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
   useEffect(() => {
     return () => {
       activeCustomerIdRef.current = '';
+      isNavigatingAwayRef.current = true;
       if (successTimeoutRef.current) {
         clearTimeout(successTimeoutRef.current);
+      }
+      if (deleteTimeoutRef.current) {
+        clearTimeout(deleteTimeoutRef.current);
       }
     };
   }, []);
 
-  if (status === 'loading' || status === 'idle') {
+  if (!displayCustomer && (status === 'loading' || status === 'idle')) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-neutral-500 bg-white border border-neutral-200 rounded-lg max-w-5xl mx-auto mt-6">
         <svg className="w-8 h-8 animate-spin mb-4 text-neutral-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -80,7 +106,7 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
     );
   }
 
-  if (status === 'failed' || (!customer && status === 'succeeded')) {
+  if (!displayCustomer && (status === 'failed' || (!customer && status === 'succeeded'))) {
     return (
       <div className="w-full mx-auto pb-12 min-w-0 max-w-5xl mt-6">
         <EmptyState 
@@ -105,10 +131,10 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
     );
   }
 
-  if (!customer) return null; // Safe fallback
+  if (!displayCustomer) return null; // Safe fallback
 
   const handleUpdate = async (field: keyof Customer, value: string | boolean): Promise<boolean> => {
-    if (!customer || !resolvedParams.id) return false;
+    if (!displayCustomer || !resolvedParams.id) return false;
     setPageError(null);
 
     // Contact management fields belong to Customer Contacts and are not integrated in this phase
@@ -118,7 +144,7 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
       throw new Error(msg);
     }
 
-    const targetId = customer.id;
+    const targetId = displayCustomer.id;
     let payloadField: UpdateCustomerRequest = {};
 
     if (field === 'name') {
@@ -184,16 +210,54 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
   };
 
   const handleToggleStatus = async () => {
+    if (!displayCustomer) return;
     setIsConfirmOpen(false);
     try {
-      await handleUpdate('status', !customer.isActive);
+      await handleUpdate('status', !displayCustomer.isActive);
     } catch {
       // Error handled inside handleUpdate
     }
   };
 
-  const parentCustomer = customer.parentCustomerId 
-    ? allCustomers.find(c => c.id === customer.parentCustomerId)
+  const handleDeleteCustomer = async () => {
+    if (!displayCustomer || isDeleting || isNavigatingAwayRef.current) return;
+    const targetId = displayCustomer.id;
+
+    const resultAction = await dispatch(deleteCustomer(targetId));
+
+    if (deleteCustomer.fulfilled.match(resultAction)) {
+      setIsDeleteDialogOpen(false);
+      dispatch(resetDeleteState());
+      const backendMsg = (resultAction.payload as any)?.message || 'Customer deleted successfully.';
+      setDeleteSuccessMessage(backendMsg);
+      setShowDeleteSuccess(true);
+      isNavigatingAwayRef.current = true;
+      if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
+      deleteTimeoutRef.current = setTimeout(() => {
+        router.push('/customers');
+      }, 1500);
+    } else {
+      const errorMsg =
+        (resultAction.payload as string) ||
+        resultAction.error?.message ||
+        'Failed to delete customer.';
+      throw new Error(errorMsg);
+    }
+  };
+
+  const handleCloseDeleteDialog = (open: boolean) => {
+    if (!open) {
+      if (!isDeleting) {
+        setIsDeleteDialogOpen(false);
+        dispatch(resetDeleteState());
+      }
+    } else {
+      setIsDeleteDialogOpen(true);
+    }
+  };
+
+  const parentCustomer = displayCustomer.parentCustomerId 
+    ? allCustomers.find(c => c.id === displayCustomer.parentCustomerId)
     : null;
 
   return (
@@ -202,6 +266,12 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
         show={showSuccessAlert} 
         title="Customer Updated" 
         description={successMessage} 
+      />
+
+      <SuccessAlert 
+        show={showDeleteSuccess} 
+        title="Customer Deleted" 
+        description={deleteSuccessMessage} 
       />
 
       {pageError && (
@@ -224,22 +294,27 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
       )}
 
       <CustomerDetailsHeader 
-        id={customer.id}
-        name={customer.name} 
-        code={customer.customerCode} 
-        status={customer.isActive ? 'Active' : 'Inactive'} 
+        id={displayCustomer.id}
+        name={displayCustomer.name} 
+        code={displayCustomer.customerCode} 
+        status={displayCustomer.isActive ? 'Active' : 'Inactive'} 
         onActivateToggle={() => setIsConfirmOpen(true)}
+        onDelete={() => {
+          dispatch(resetDeleteState());
+          setIsDeleteDialogOpen(true);
+        }}
+        isDeleting={isDeleting}
       />
       
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
-        <CustomerOverview customer={customer} onUpdate={handleUpdate} />
-        <CustomerContactInformation customer={customer} onUpdate={handleUpdate} />
+        <CustomerOverview customer={displayCustomer} onUpdate={handleUpdate} />
+        <CustomerContactInformation customer={displayCustomer} onUpdate={handleUpdate} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
-        <CustomerAddress customer={customer} onUpdate={handleUpdate} />
+        <CustomerAddress customer={displayCustomer} onUpdate={handleUpdate} />
         <CustomerHierarchy 
-          customer={customer} 
+          customer={displayCustomer} 
           parentName={parentCustomer?.name}
           childrenList={childrenList}
           childrenStatus={childrenStatus}
@@ -249,11 +324,31 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
       <ConfirmationDialog
         open={isConfirmOpen}
         onOpenChange={setIsConfirmOpen}
-        title={customer.isActive ? 'Deactivate customer?' : 'Activate customer?'}
-        description={`Are you sure you want to ${customer.isActive ? 'deactivate' : 'activate'} ${customer.name}?`}
-        confirmLabel={customer.isActive ? 'Deactivate' : 'Activate'}
-        variant={customer.isActive ? 'destructive' : 'primary'}
+        title={displayCustomer.isActive ? 'Deactivate customer?' : 'Activate customer?'}
+        description={`Are you sure you want to ${displayCustomer.isActive ? 'deactivate' : 'activate'} ${displayCustomer.name}?`}
+        confirmLabel={displayCustomer.isActive ? 'Deactivate' : 'Activate'}
+        variant={displayCustomer.isActive ? 'destructive' : 'primary'}
         onConfirm={handleToggleStatus}
+      />
+
+      <ConfirmationDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={handleCloseDeleteDialog}
+        title="Delete customer?"
+        description={
+          deleteError ? (
+            <div className="flex flex-col gap-2">
+              <span className="text-red-600 font-medium">{deleteError}</span>
+              <span className="text-neutral-500 text-xs">You may retry or cancel.</span>
+            </div>
+          ) : (
+            `Are you sure you want to delete "${displayCustomer.name}" (${displayCustomer.customerCode})? This action cannot be undone.`
+          )
+        }
+        confirmLabel={isDeleting ? 'Deleting...' : 'Delete Customer'}
+        variant="destructive"
+        onConfirm={handleDeleteCustomer}
+        confirmDisabled={isDeleting}
       />
     </div>
   );

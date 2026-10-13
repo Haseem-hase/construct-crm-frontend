@@ -35,9 +35,11 @@ export function ConfirmationDialog({
     setIsConfirming(true);
     try {
       await onConfirm();
+      onOpenChange(false);
+    } catch {
+      // Keep open if onConfirm threw so user can see error and retry
     } finally {
       setIsConfirming(false);
-      onOpenChange(false);
     }
   };
 

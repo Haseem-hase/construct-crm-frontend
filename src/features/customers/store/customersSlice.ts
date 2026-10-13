@@ -115,7 +115,11 @@ export const deleteCustomer = createAsyncThunk(
       const response = await customersApi.deleteCustomer(id);
       return { id, ...response };
     } catch (err: any) {
-      return rejectWithValue(err?.response?.data?.message || 'Failed to delete customer');
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.errors?.[0]?.message ||
+        'Failed to delete customer';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -251,11 +255,17 @@ const customersSlice = createSlice({
       })
       .addCase(deleteCustomer.fulfilled, (state, action) => {
         state.deleteStatus = 'succeeded';
+        state.deleteError = null;
         state.customers = state.customers.filter(customer => customer.id !== action.payload.id);
         if (state.selectedCustomer?.id === action.payload.id) {
           state.selectedCustomer = null;
+          state.currentDetailId = null;
           state.detailStatus = 'idle';
+          state.detailError = null;
         }
+        state.childCustomers = state.childCustomers.filter(
+          c => c.id !== action.payload.id && c.parentCustomerId !== action.payload.id
+        );
       })
       .addCase(deleteCustomer.rejected, (state, action) => {
         state.deleteStatus = 'failed';
