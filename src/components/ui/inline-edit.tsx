@@ -32,6 +32,12 @@ export function InlineEdit({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!isEditing) {
+      setEditValue(value || '');
+    }
+  }, [value, isEditing]);
+
+  useEffect(() => {
     if (isEditing) {
       const el = containerRef.current?.querySelector('input, textarea, [role="combobox"]');
       if (el) {
@@ -67,7 +73,7 @@ export function InlineEdit({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       handleCancel();
-    } else if (e.key === 'Enter' && editor !== 'textarea') {
+    } else if (e.key === 'Enter' && editor !== 'textarea' && editor !== 'select') {
       handleSave();
     }
   };

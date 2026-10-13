@@ -61,6 +61,7 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
 
   useEffect(() => {
     return () => {
+      activeCustomerIdRef.current = '';
       if (successTimeoutRef.current) {
         clearTimeout(successTimeoutRef.current);
       }
@@ -147,20 +148,12 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
     } else if (field === 'address') {
       const trimmed = typeof value === 'string' ? value.trim() : '';
       if (trimmed.length > 255) throw new Error('Address must not exceed 255 characters.');
-      payloadField = { address: trimmed || undefined };
+      payloadField = { address: trimmed };
     } else {
       return false;
     }
 
-    // Preserve existing customer values to prevent accidental resets
     const payload: UpdateCustomerRequest = {
-      name: customer.name,
-      type: customer.type,
-      country: customer.country || undefined,
-      city: customer.city,
-      address: customer.address || undefined,
-      parentCustomerId: customer.parentCustomerId || undefined,
-      isActive: customer.isActive ?? true,
       ...payloadField,
     };
 

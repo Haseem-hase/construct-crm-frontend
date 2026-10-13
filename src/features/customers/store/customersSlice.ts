@@ -6,6 +6,8 @@ export interface CustomersState {
   customers: Customer[];
   selectedCustomer: Customer | null;
   childCustomers: Customer[];
+  currentDetailId: string | null;
+  currentChildrenId: string | null;
   listStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   detailStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   childrenStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
@@ -24,6 +26,8 @@ const initialState: CustomersState = {
   customers: [],
   selectedCustomer: null,
   childCustomers: [],
+  currentDetailId: null,
+  currentChildrenId: null,
   listStatus: 'idle',
   detailStatus: 'idle',
   childrenStatus: 'idle',
@@ -92,7 +96,6 @@ export const updateCustomer = createAsyncThunk(
   async ({ id, payload }: { id: string; payload: UpdateCustomerRequest }, { rejectWithValue, dispatch }) => {
     try {
       const response = await customersApi.updateCustomer(id, payload);
-      dispatch(fetchCustomerById(id));
       dispatch(fetchCustomers());
       return { customer: response.data.customer, message: response.message };
     } catch (err: any) {
@@ -123,11 +126,13 @@ const customersSlice = createSlice({
   reducers: {
     clearSelectedCustomer: (state) => {
       state.selectedCustomer = null;
+      state.currentDetailId = null;
       state.detailStatus = 'idle';
       state.detailError = null;
     },
     clearChildCustomers: (state) => {
       state.childCustomers = [];
+      state.currentChildrenId = null;
       state.childrenStatus = 'idle';
       state.childrenError = null;
     },
@@ -162,32 +167,42 @@ const customersSlice = createSlice({
 
     // Detail Reducers
     builder
-      .addCase(fetchCustomerById.pending, (state) => {
+      .addCase(fetchCustomerById.pending, (state, action) => {
+        state.currentDetailId = action.meta.arg;
         state.detailStatus = 'loading';
         state.detailError = null;
       })
       .addCase(fetchCustomerById.fulfilled, (state, action) => {
-        state.detailStatus = 'succeeded';
-        state.selectedCustomer = action.payload;
+        if (state.currentDetailId === action.meta.arg) {
+          state.detailStatus = 'succeeded';
+          state.selectedCustomer = action.payload;
+        }
       })
       .addCase(fetchCustomerById.rejected, (state, action) => {
-        state.detailStatus = 'failed';
-        state.detailError = (action.payload as string) || action.error.message || 'Failed to fetch customer details';
+        if (state.currentDetailId === action.meta.arg) {
+          state.detailStatus = 'failed';
+          state.detailError = (action.payload as string) || action.error.message || 'Failed to fetch customer details';
+        }
       });
 
     // Children Reducers
     builder
-      .addCase(fetchCustomerChildren.pending, (state) => {
+      .addCase(fetchCustomerChildren.pending, (state, action) => {
+        state.currentChildrenId = action.meta.arg;
         state.childrenStatus = 'loading';
         state.childrenError = null;
       })
       .addCase(fetchCustomerChildren.fulfilled, (state, action) => {
-        state.childrenStatus = 'succeeded';
-        state.childCustomers = action.payload;
+        if (state.currentChildrenId === action.meta.arg) {
+          state.childrenStatus = 'succeeded';
+          state.childCustomers = action.payload;
+        }
       })
       .addCase(fetchCustomerChildren.rejected, (state, action) => {
-        state.childrenStatus = 'failed';
-        state.childrenError = (action.payload as string) || action.error.message || 'Failed to fetch customer children';
+        if (state.currentChildrenId === action.meta.arg) {
+          state.childrenStatus = 'failed';
+          state.childrenError = (action.payload as string) || action.error.message || 'Failed to fetch customer children';
+        }
       });
 
     // Create Reducers
@@ -214,7 +229,13 @@ const customersSlice = createSlice({
         state.updateStatus = 'succeeded';
         state.updateError = null;
         if (action.payload?.customer) {
-          state.selectedCustomer = action.payload.customer;
+          if (state.selectedCustomer?.id === action.payload.customer.id) {
+            state.selectedCustomer = action.payload.customer;
+          }
+          const idx = state.customers.findIndex(c => c.id === action.payload.customer.id);
+          if (idx !== -1) {
+            state.customers[idx] = action.payload.customer;
+          }
         }
       })
       .addCase(updateCustomer.rejected, (state, action) => {
