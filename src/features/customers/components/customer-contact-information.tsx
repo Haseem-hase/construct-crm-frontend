@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
@@ -9,6 +9,7 @@ import { Dialog } from '@/src/components/ui/dialog';
 import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
 import { FormField } from '@/src/components/ui/form-field';
 import { Input } from '@/src/components/ui/input';
+import { SuccessAlert } from '@/src/components/ui/success-alert';
 import { Customer, CustomerContact, CreateCustomerContactRequest, UpdateCustomerContactRequest } from '../types/customer.types';
 import {
   fetchCustomerContacts,
@@ -73,7 +74,37 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
   // Delete Contact State
   const [contactToDelete, setContactToDelete] = useState<CustomerContact | null>(null);
 
+  // Notification State
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [successTitle, setSuccessTitle] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const alertTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
+    return () => {
+      if (alertTimeoutRef.current) {
+        clearTimeout(alertTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const triggerSuccessAlert = (title: string, message: string) => {
+    setSuccessTitle(title);
+    setSuccessMessage(message);
+    setShowSuccessAlert(true);
+    if (alertTimeoutRef.current) {
+      clearTimeout(alertTimeoutRef.current);
+    }
+    alertTimeoutRef.current = setTimeout(() => {
+      setShowSuccessAlert(false);
+    }, 3000);
+  };
+
+  useEffect(() => {
+    setShowSuccessAlert(false);
+    if (alertTimeoutRef.current) {
+      clearTimeout(alertTimeoutRef.current);
+    }
     if (customer?.id) {
       dispatch(fetchCustomerContacts(customer.id));
     }
@@ -200,6 +231,10 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
 
     if (createCustomerContact.fulfilled.match(action)) {
       handleCloseAddModal();
+      triggerSuccessAlert(
+        'Contact Created',
+        action.payload?.message || 'Contact created successfully.'
+      );
     }
   };
 
@@ -263,6 +298,10 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
 
     if (updateCustomerContact.fulfilled.match(action)) {
       handleCloseEditModal();
+      triggerSuccessAlert(
+        'Contact Updated',
+        action.payload?.message || 'Contact updated successfully.'
+      );
     }
   };
 
@@ -292,8 +331,10 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
     );
 
     if (deleteCustomerContact.fulfilled.match(action)) {
+      const msg = action.payload?.message || 'Contact deleted successfully.';
       setContactToDelete(null);
       dispatch(resetContactMutationStates());
+      triggerSuccessAlert('Contact Deleted', msg);
     } else {
       const errorMsg =
         (action.payload as string) ||
@@ -305,6 +346,11 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
 
   return (
     <>
+      <SuccessAlert
+        show={showSuccessAlert}
+        title={successTitle}
+        description={successMessage}
+      />
       <Card className="w-full min-w-0 h-full">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle>Contact Information</CardTitle>
@@ -458,9 +504,9 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
         description="Add a new contact person associated with this customer."
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
-          {createStatus === 'failed' && createError && (
+          {createStatus === 'failed' && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
-              {createError}
+              {createError || 'Failed to create contact.'}
             </div>
           )}
 
@@ -564,9 +610,9 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
         description="Update the contact person's details."
       >
         <form onSubmit={handleEditSubmit} className="flex flex-col gap-4 mt-2">
-          {updateStatus === 'failed' && updateError && (
+          {updateStatus === 'failed' && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
-              {updateError}
+              {updateError || 'Failed to update contact.'}
             </div>
           )}
 
@@ -658,9 +704,11 @@ export function CustomerContactInformation({ customer }: CustomerContactInformat
         onOpenChange={handleCloseDeleteDialog}
         title="Delete customer contact?"
         description={
-          deleteError ? (
+          deleteStatus === 'failed' ? (
             <div className="flex flex-col gap-2">
-              <span className="text-red-600 font-medium">{deleteError}</span>
+              <span className="text-red-600 font-medium">
+                {deleteError || 'Failed to delete contact.'}
+              </span>
               <span className="text-neutral-500 text-xs">You may retry or cancel.</span>
             </div>
           ) : (
