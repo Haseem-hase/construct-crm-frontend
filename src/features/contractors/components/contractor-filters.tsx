@@ -23,17 +23,20 @@ export function ContractorFilters({
   cityFilter,
   onCityChange,
   availableCities,
-  onReset
+  onReset,
 }: ContractorFiltersProps) {
   const statusOptions = [
     { value: 'all', label: 'All Statuses' },
-    { value: 'Active', label: 'Active' },
-    { value: 'Inactive', label: 'Inactive' }
+    { value: 'PENDING', label: 'Pending' },
+    { value: 'ACTIVE', label: 'Active' },
+    { value: 'SUSPENDED', label: 'Suspended' },
+    { value: 'INACTIVE', label: 'Inactive' },
+    { value: 'TERMINATED', label: 'Terminated' },
   ];
 
   const cityOptions = [
     { value: 'all', label: 'All Cities' },
-    ...availableCities.map(city => ({ value: city, label: city }))
+    ...availableCities.map((city) => ({ value: city, label: city })),
   ];
 
   return (
@@ -42,22 +45,22 @@ export function ContractorFilters({
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <Search className="h-4 w-4 text-neutral-400" />
         </div>
-        <Input 
+        <Input
           className="pl-9 w-full"
-          placeholder="Search contractors..." 
+          placeholder="Search contractors..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
         />
       </div>
       <div className="w-full sm:w-48 shrink-0">
-        <Select 
+        <Select
           options={statusOptions}
           value={statusFilter}
           onChange={onStatusChange}
         />
       </div>
       <div className="w-full sm:w-48 shrink-0">
-        <Select 
+        <Select
           options={cityOptions}
           value={cityFilter}
           onChange={onCityChange}
