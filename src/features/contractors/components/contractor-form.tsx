@@ -15,13 +15,18 @@ import {
   ApiContractor,
   ApiContractorStatus,
   CreateContractorRequest,
+  UpdateContractorRequest,
 } from '../types/contractor.types';
 import { SAUDI_CITIES } from '../data/contractor-options';
 import {
   createContractor,
+  updateContractor,
   selectCreateContractorStatus,
   selectCreateContractorError,
+  selectUpdateContractorStatus,
+  selectUpdateContractorError,
   resetCreateState,
+  resetUpdateState,
 } from '../store/contractorsSlice';
 
 interface ContractorFormProps {
@@ -35,7 +40,10 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
 
   const createStatus = useAppSelector(selectCreateContractorStatus);
   const createError = useAppSelector(selectCreateContractorError);
-  const isSubmitting = createStatus === 'loading';
+  const updateStatus = useAppSelector(selectUpdateContractorStatus);
+  const updateError = useAppSelector(selectUpdateContractorError);
+
+  const isSubmitting = mode === 'create' ? createStatus === 'loading' : updateStatus === 'loading';
 
   // Determine initial full name (from ApiContractor.fullName or legacy companyName)
   const initialFullName =
@@ -69,6 +77,28 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
     'notes' in (initialData || {}) ? (initialData as ApiContractor).notes || '' : ''
   );
 
+  // Synchronize state when initialData changes (e.g. if switching IDs or initialData arrives)
+  useEffect(() => {
+    if (initialData) {
+      const name =
+        ('fullName' in initialData ? (initialData as ApiContractor).fullName : '') ||
+        ('companyName' in initialData ? (initialData as Contractor).companyName : '') ||
+        '';
+      setFullName(name);
+      setEmail(initialData.email || '');
+      setPhone(initialData.phone || '');
+      setAlternativePhone(initialData.alternativePhone || '');
+      setStatus((initialData.status as ApiContractorStatus) || 'PENDING');
+      setCountry(initialData.country || 'Saudi Arabia');
+      setCity(initialData.city || '');
+      setAddress(initialData.address || '');
+      setNationalId(initialData.nationalId || '');
+      setLicenseNumber(initialData.licenseNumber || '');
+      setLicenseExpiryDate(initialData.licenseExpiryDate?.split('T')[0] || '');
+      setNotes('notes' in initialData ? (initialData as ApiContractor).notes || '' : '');
+    }
+  }, [initialData]);
+
   // Feedback State
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
@@ -78,6 +108,8 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
   useEffect(() => {
     if (mode === 'create') {
       dispatch(resetCreateState());
+    } else {
+      dispatch(resetUpdateState());
     }
     return () => {
       if (timeoutRef.current) {
@@ -166,84 +198,107 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
     if (!validate()) return;
     if (isSubmitting) return;
 
-    if (mode === 'create') {
-      const payload: CreateContractorRequest = {
-        fullName: fullName.trim(),
-        phone: phone.trim(),
-        country: country.trim(),
-        city: city.trim(),
-        ...(email.trim() ? { email: email.trim() } : {}),
-        ...(alternativePhone.trim() ? { alternativePhone: alternativePhone.trim() } : {}),
-        ...(address.trim() ? { address: address.trim() } : {}),
-        ...(nationalId.trim() ? { nationalId: nationalId.trim() } : {}),
-        ...(licenseNumber.trim() ? { licenseNumber: licenseNumber.trim() } : {}),
-        ...(licenseExpiryDate ? { licenseExpiryDate: new Date(licenseExpiryDate).toISOString() } : {}),
-        ...(status ? { status } : {}),
-        ...(notes.trim() ? { notes: notes.trim() } : {}),
-      };
+      if (mode === 'create') {
+        const payload: CreateContractorRequest = {
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+          country: country.trim(),
+          city: city.trim(),
+          ...(email.trim() ? { email: email.trim() } : {}),
+          ...(alternativePhone.trim() ? { alternativePhone: alternativePhone.trim() } : {}),
+          ...(address.trim() ? { address: address.trim() } : {}),
+          ...(nationalId.trim() ? { nationalId: nationalId.trim() } : {}),
+          ...(licenseNumber.trim() ? { licenseNumber: licenseNumber.trim() } : {}),
+          ...(licenseExpiryDate ? { licenseExpiryDate: new Date(licenseExpiryDate).toISOString() } : {}),
+          ...(status ? { status } : {}),
+          ...(notes.trim() ? { notes: notes.trim() } : {}),
+        };
 
-      const resultAction = await dispatch(createContractor(payload));
+        const resultAction = await dispatch(createContractor(payload));
 
-      if (createContractor.fulfilled.match(resultAction)) {
-        const createdContractor = resultAction.payload.contractor;
-        setSuccessMessage(resultAction.payload.message || 'Contractor created successfully.');
-        setShowSuccess(true);
+        if (createContractor.fulfilled.match(resultAction)) {
+          const createdContractor = resultAction.payload.contractor;
+          setSuccessMessage(resultAction.payload.message || 'Contractor created successfully.');
+          setShowSuccess(true);
 
-        timeoutRef.current = setTimeout(() => {
-          if (createdContractor?.id) {
-            router.push(`/contractors/${createdContractor.id}`);
-          } else {
-            router.push('/contractors');
-          }
-        }, 1200);
+          timeoutRef.current = setTimeout(() => {
+            if (createdContractor?.id) {
+              router.push(`/contractors/${createdContractor.id}`);
+            } else {
+              router.push('/contractors');
+            }
+          }, 1200);
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (!initialData?.id) return;
+
+        const payload: UpdateContractorRequest = {
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+          country: country.trim(),
+          city: city.trim(),
+          email: email.trim(),
+          alternativePhone: alternativePhone.trim(),
+          address: address.trim(),
+          nationalId: nationalId.trim(),
+          licenseNumber: licenseNumber.trim(),
+          licenseExpiryDate: licenseExpiryDate ? new Date(licenseExpiryDate).toISOString() : undefined,
+          status,
+          notes: notes.trim(),
+        };
+
+        const resultAction = await dispatch(
+          updateContractor({ id: initialData.id, payload })
+        );
+
+        if (updateContractor.fulfilled.match(resultAction)) {
+          const updated = resultAction.payload.contractor;
+          setSuccessMessage(resultAction.payload.message || 'Contractor updated successfully.');
+          setShowSuccess(true);
+
+          timeoutRef.current = setTimeout(() => {
+            if (updated?.id) {
+              router.push(`/contractors/${updated.id}`);
+            } else {
+              router.push(`/contractors/${initialData.id}`);
+            }
+          }, 1200);
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       }
-    } else {
-      // Edit mode (will be integrated in Phase 5)
-      if (initialData?.id) {
-        router.push(`/contractors/${initialData.id}`);
-      } else {
-        router.push('/contractors');
-      }
-    }
-  };
+    };
 
-  return (
-    <>
-      <SuccessAlert
-        show={showSuccess}
-        title="Contractor Created"
-        description={successMessage}
-      />
+    return (
+      <>
+        <SuccessAlert
+          show={showSuccess}
+          title={mode === 'create' ? 'Contractor Created' : 'Contractor Updated'}
+          description={successMessage}
+        />
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full min-w-0">
-        {mode === 'create' && (
-          <div className="bg-neutral-50 border border-neutral-200 rounded-md p-3 text-[14px] text-neutral-600">
-            <strong>Note:</strong> Contractor code will be generated automatically.
-          </div>
-        )}
-
-        {mode === 'create' && createStatus === 'failed' && createError && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            <h3 className="font-medium text-sm">Failed to create contractor</h3>
-            <p className="text-sm mt-1">{createError}</p>
-          </div>
-        )}
-
-        {mode === 'edit' && initialData && (
-          <div className="bg-neutral-50 border border-neutral-200 rounded-md p-4 flex flex-col gap-1">
-            <span className="text-sm text-neutral-500 font-medium">Current Status</span>
-            <div className="flex items-center gap-3">
-              <span className="text-[15px] font-medium text-neutral-900">
-                {initialData.status}
-              </span>
-              <span className="text-[13px] text-neutral-400">
-                Contractor status is managed from the contractor details page.
-              </span>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full min-w-0">
+          {mode === 'create' && (
+            <div className="bg-neutral-50 border border-neutral-200 rounded-md p-3 text-[14px] text-neutral-600">
+              <strong>Note:</strong> Contractor code will be generated automatically.
             </div>
-          </div>
-        )}
+          )}
+
+          {mode === 'create' && createStatus === 'failed' && createError && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+              <h3 className="font-medium text-sm">Failed to create contractor</h3>
+              <p className="text-sm mt-1">{createError}</p>
+            </div>
+          )}
+
+          {mode === 'edit' && updateStatus === 'failed' && updateError && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+              <h3 className="font-medium text-sm">Failed to update contractor</h3>
+              <p className="text-sm mt-1">{updateError}</p>
+            </div>
+          )}
 
         {/* Card 1: Contractor Information */}
         <Card>
@@ -327,7 +382,7 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
                 />
               </FormField>
 
-              <FormField label="Initial Status" error={errors.status}>
+              <FormField label="Status" error={errors.status}>
                 <Select
                   options={statusOptions}
                   value={status}
