@@ -25,22 +25,24 @@ export interface RefreshRequest {
   refreshToken: string;
 }
 
-export interface RefreshResponse {
+export interface RefreshResponseData {
   accessToken: string;
   refreshToken: string;
+}
+
+export interface RefreshResponse {
+  success: boolean;
+  message: string;
+  data: RefreshResponseData;
 }
 
 export interface LogoutRequest {
   refreshToken: string;
 }
 
-export interface LogoutResponseData {
-  message: string;
-}
-
 export interface LogoutResponse {
   success: boolean;
-  data: LogoutResponseData;
+  message: string;
 }
 
 export interface OrganizationRoleDetails {

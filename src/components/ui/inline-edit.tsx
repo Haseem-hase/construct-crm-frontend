@@ -8,7 +8,7 @@ import { Button } from './button';
 
 export interface InlineEditProps {
   value: string;
-  onSave: (value: string) => boolean | void;
+  onSave: (value: string) => boolean | void | Promise<boolean | void>;
   editor?: 'text' | 'email' | 'phone' | 'textarea' | 'select' | 'date' | 'number';
   options?: { value: string; label: string }[];
   displayValue?: React.ReactNode;
@@ -27,9 +27,15 @@ export function InlineEdit({
 }: InlineEditProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value || '');
+  const [isLoading, setIsLoading] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-
+  useEffect(() => {
+    if (!isEditing) {
+      setEditValue(value || '');
+    }
+  }, [value, isEditing]);
 
   useEffect(() => {
     if (isEditing) {
@@ -40,23 +46,34 @@ export function InlineEdit({
     }
   }, [isEditing]);
 
-  const handleSave = () => {
-    if (disabled) return;
-    const result = onSave(editValue);
-    if (result !== false) {
+  const handleSave = async () => {
+    if (disabled || isLoading) return;
+    try {
+      setIsLoading(true);
+      setInlineError(null);
+      const result = await onSave(editValue);
+      if (result === false) {
+        return;
+      }
       setIsEditing(false);
+    } catch (err: any) {
+      setInlineError(err?.message || 'Failed to save changes');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleCancel = () => {
+    if (isLoading) return;
     setEditValue(value || '');
+    setInlineError(null);
     setIsEditing(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       handleCancel();
-    } else if (e.key === 'Enter' && editor !== 'textarea') {
+    } else if (e.key === 'Enter' && editor !== 'textarea' && editor !== 'select') {
       handleSave();
     }
   };
@@ -67,30 +84,46 @@ export function InlineEdit({
         {editor === 'textarea' ? (
           <Textarea
             value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
+            onChange={(e) => {
+              setEditValue(e.target.value);
+              if (inlineError) setInlineError(null);
+            }}
             rows={3}
-            disabled={disabled}
+            disabled={disabled || isLoading}
             className="w-full"
           />
         ) : editor === 'select' ? (
           <Select
             value={editValue}
-            onChange={setEditValue}
+            onChange={(val) => {
+              setEditValue(val);
+              if (inlineError) setInlineError(null);
+            }}
             options={options}
-            disabled={disabled}
+            disabled={disabled || isLoading}
           />
         ) : (
           <Input
             type={editor === 'phone' ? 'tel' : editor}
             value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            disabled={disabled}
+            onChange={(e) => {
+              setEditValue(e.target.value);
+              if (inlineError) setInlineError(null);
+            }}
+            disabled={disabled || isLoading}
             className="w-full"
           />
         )}
+        {inlineError && (
+          <p className="text-xs text-red-600 mt-0.5">{inlineError}</p>
+        )}
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={handleCancel}>Cancel</Button>
-          <Button variant="primary" size="sm" onClick={handleSave}>Save</Button>
+          <Button variant="ghost" size="sm" onClick={handleCancel} disabled={disabled || isLoading}>
+            Cancel
+          </Button>
+          <Button variant="primary" size="sm" onClick={handleSave} disabled={disabled || isLoading}>
+            {isLoading ? 'Saving...' : 'Save'}
+          </Button>
         </div>
       </div>
     );
@@ -104,8 +137,9 @@ export function InlineEdit({
         type="button"
         className="text-left hover:bg-neutral-50 px-2 -mx-2 py-1 rounded-md border border-transparent hover:border-neutral-200 transition-colors"
         onClick={() => {
-          if (!disabled) {
+          if (!disabled && !isLoading) {
             setEditValue(value || '');
+            setInlineError(null);
             setIsEditing(true);
           }
         }}

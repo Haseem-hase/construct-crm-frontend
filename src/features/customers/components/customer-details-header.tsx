@@ -7,13 +7,24 @@ import { Badge } from '@/src/components/ui/badge';
 import { PageHeader } from '@/src/components/ui/page-header';
 
 interface CustomerDetailsHeaderProps {
+  id?: string;
   name: string;
   code: string;
   status: 'Active' | 'Inactive';
   onActivateToggle: () => void;
+  onDelete?: () => void;
+  isDeleting?: boolean;
 }
 
-export function CustomerDetailsHeader({ name, code, status, onActivateToggle }: CustomerDetailsHeaderProps) {
+export function CustomerDetailsHeader({ 
+  id, 
+  name, 
+  code, 
+  status, 
+  onActivateToggle,
+  onDelete,
+  isDeleting = false,
+}: CustomerDetailsHeaderProps) {
   const router = useRouter();
 
   return (
@@ -24,12 +35,23 @@ export function CustomerDetailsHeader({ name, code, status, onActivateToggle }: 
       backLink={{ href: '/customers', label: 'Back to Customers' }}
       action={
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button onClick={() => router.push(`/customers/${code.toLowerCase()}/edit`)} variant="outline">
+          {onDelete && (
+            <Button 
+              onClick={onDelete} 
+              variant="outline" 
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-neutral-200"
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Customer'}
+            </Button>
+          )}
+          <Button onClick={() => router.push(`/customers/${id || code.toLowerCase()}/edit`)} variant="outline" disabled={isDeleting}>
             Edit Customer
           </Button>
           <Button 
             onClick={onActivateToggle} 
             variant={status === 'Active' ? 'destructive' : 'primary'}
+            disabled={isDeleting}
           >
             {status === 'Active' ? 'Deactivate' : 'Activate'}
           </Button>
