@@ -244,7 +244,7 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
           address: address.trim(),
           nationalId: nationalId.trim(),
           licenseNumber: licenseNumber.trim(),
-          licenseExpiryDate: licenseExpiryDate ? new Date(licenseExpiryDate).toISOString() : undefined,
+          licenseExpiryDate: licenseExpiryDate ? new Date(licenseExpiryDate).toISOString() : null,
           status,
           notes: notes.trim(),
         };

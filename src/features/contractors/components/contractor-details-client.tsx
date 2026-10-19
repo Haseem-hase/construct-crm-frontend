@@ -160,7 +160,7 @@ export function ContractorDetailsClient({ contractor }: { contractor: ApiContrac
           }
           payload.licenseExpiryDate = dateObj.toISOString();
         } else {
-          payload.licenseExpiryDate = undefined;
+          payload.licenseExpiryDate = null;
         }
         break;
       }
