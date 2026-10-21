@@ -13,10 +13,31 @@ import { SuccessAlert } from '@/src/components/ui/success-alert';
 
 export function ContractorDetailsClient({ contractor }: { contractor: ApiContractor }) {
   const dispatch = useAppDispatch();
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successAlert, setSuccessAlert] = useState<{
+    show: boolean;
+    title: string;
+    description: string;
+  }>({
+    show: false,
+    title: 'Saved Successfully',
+    description: '',
+  });
   const [bannerError, setBannerError] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerSuccess = (title: string, description: string) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    setSuccessAlert({
+      show: true,
+      title,
+      description,
+    });
+    timeoutRef.current = setTimeout(() => {
+      setSuccessAlert((prev) => ({ ...prev, show: false }));
+    }, 3500);
+  };
 
   // Keep track of the active contractor ID to prevent race conditions from stale requests
   const activeContractorIdRef = useRef(contractor.id);
@@ -190,12 +211,7 @@ export function ContractorDetailsClient({ contractor }: { contractor: ApiContrac
 
     if (updateContractor.fulfilled.match(resultAction)) {
       const message = resultAction.payload.message || 'Contractor updated successfully.';
-      setSuccessMessage(message);
-      setShowSuccess(true);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        setShowSuccess(false);
-      }, 3500);
+      triggerSuccess('Saved Successfully', message);
       return true;
     } else {
       const errorMessage =
@@ -210,9 +226,9 @@ export function ContractorDetailsClient({ contractor }: { contractor: ApiContrac
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
       <SuccessAlert
-        show={showSuccess}
-        title="Saved Successfully"
-        description={successMessage}
+        show={successAlert.show}
+        title={successAlert.title}
+        description={successAlert.description}
       />
 
       {bannerError && (
@@ -233,7 +249,13 @@ export function ContractorDetailsClient({ contractor }: { contractor: ApiContrac
         </div>
       )}
 
-      <ContractorDetailsHeader contractor={contractor} />
+      <ContractorDetailsHeader
+        contractor={contractor}
+        onStatusSuccess={(message) => {
+          setBannerError(null);
+          triggerSuccess('Status Updated', message);
+        }}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <ContractorOverview contractor={contractor} onUpdate={handleUpdate} />
