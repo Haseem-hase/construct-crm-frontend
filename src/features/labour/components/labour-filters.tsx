@@ -14,6 +14,7 @@ interface LabourFiltersProps {
   cityFilter: string;
   onCityChange: (value: string) => void;
   availableCities: string[];
+  professions: { id: string; name: string }[];
   onReset: () => void;
 }
 
@@ -27,19 +28,10 @@ export function LabourFilters({
   cityFilter,
   onCityChange,
   availableCities,
+  professions,
   onReset
 }: LabourFiltersProps) {
-  const professionOptions = [
-    { value: 'all', label: 'All Professions' },
-    { value: 'prof-mason', label: 'Mason' },
-    { value: 'prof-electrician', label: 'Electrician' },
-    { value: 'prof-plumber', label: 'Plumber' },
-    { value: 'prof-carpenter', label: 'Carpenter' },
-    { value: 'prof-welder', label: 'Welder' },
-    { value: 'prof-painter', label: 'Painter' },
-    { value: 'prof-steel-fixer', label: 'Steel Fixer' },
-    { value: 'prof-tile-worker', label: 'Tile Worker' }
-  ];
+  const professionOptions = [ { value: 'all', label: 'All Professions' }, ...professions.map((p) => ({ value: p.id, label: p.name })) ];
 
   const statusOptions = [
     { value: 'all', label: 'All Statuses' },

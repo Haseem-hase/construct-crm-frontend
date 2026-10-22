@@ -1,7 +1,15 @@
 import { apiClient } from '@/src/lib/api/client';
-import { GetRolesResponse, GetRoleResponse, CreateRoleRequest, UpdateRoleRequest } from '../types/roles.types';
+import { GetRolesResponse, GetRoleResponse, GetGlobalRolesResponse, GetGlobalRoleResponse, CreateRoleRequest, UpdateRoleRequest } from '../types/roles.types';
 
 export const rolesApi = {
+  getGlobalRoles: async (): Promise<GetGlobalRolesResponse> => {
+    const response = await apiClient.get<GetGlobalRolesResponse>('/roles/global');
+    return response.data;
+  },
+  getGlobalRole: async (id: string): Promise<GetGlobalRoleResponse> => (await apiClient.get<GetGlobalRoleResponse>(`/roles/global/${id}`)).data,
+  createGlobalRole: async (payload: CreateRoleRequest): Promise<GetGlobalRoleResponse> => (await apiClient.post<GetGlobalRoleResponse>('/roles/global', payload)).data,
+  updateGlobalRole: async (id: string, payload: UpdateRoleRequest): Promise<GetGlobalRoleResponse> => (await apiClient.patch<GetGlobalRoleResponse>(`/roles/global/${id}`, payload)).data,
+  deleteGlobalRole: async (id: string) => (await apiClient.delete<{ success: boolean; message: string; data: { role: unknown } }>(`/roles/global/${id}`)).data,
   getRoles: async (): Promise<GetRolesResponse> => {
     const response = await apiClient.get<GetRolesResponse>('/roles');
     return response.data;

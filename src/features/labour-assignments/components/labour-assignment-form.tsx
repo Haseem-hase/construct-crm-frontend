@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
@@ -8,9 +8,9 @@ import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Select } from '@/src/components/ui/select';
 import { FormField } from '@/src/components/ui/form-field';
-import { mockLabour } from '@/src/features/labour/data/labour.mock';
-import { mockAssignments } from '@/src/features/assignments/data/assignments.mock';
-import { mockLabourAssignments } from '@/src/features/labour-assignments/data/labour-assignments.mock';
+import { labourApi, ApiLabour } from '@/src/features/labour/api/labour.api';
+import { assignmentsApi, ApiContractorAssignment } from '@/src/features/assignments/api/assignments.api';
+import { labourAssignmentsApi, ApiLabourAssignment } from '../api/labour-assignments.api';
 import { LabourAssignment } from '../types/labour-assignment.types';
 
 interface LabourAssignmentFormProps {
@@ -34,29 +34,34 @@ export function LabourAssignmentForm({ mode = 'create', initialData }: LabourAss
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [labours, setLabours] = useState<ApiLabour[]>([]);
+  const [parentAssignments, setParentAssignments] = useState<ApiContractorAssignment[]>([]);
+  const [existingAssignments, setExistingAssignments] = useState<ApiLabourAssignment[]>([]);
+  const [formError, setFormError] = useState('');
+  useEffect(() => { Promise.all([labourApi.list(), assignmentsApi.list(), labourAssignmentsApi.list()]).then(([l, a, la]) => { setLabours(l); setParentAssignments(a); setExistingAssignments(la); }).catch((error: any) => setFormError(error?.response?.data?.message || 'Unable to load assignment options.')); }, []);
 
   // Derived Options
   const labourOptions = useMemo(() => {
-    return mockLabour
+    return labours
       .filter((l) => l.status === 'ACTIVE')
       .map((l) => ({
         value: l.id,
-        label: `${l.fullName} · ${l.professionName}`,
+        label: `${l.fullName} · ${l.profession.name}`,
       }));
-  }, []);
+  }, [labours]);
 
   const assignmentOptions = useMemo(() => {
-    return mockAssignments
+    return parentAssignments
       .filter((a) => a.status === 'ACTIVE')
       .map((a) => ({
         value: a.id,
-        label: `${a.contractorCode} ${a.contractorName} | ${a.projectCode} ${a.projectName}`,
+        label: `${a.contractor.contractorCode} ${a.contractor.fullName} | ${a.project.projectCode} ${a.project.name}`,
       }));
-  }, []);
+  }, [parentAssignments]);
 
   const selectedParentAssignment = useMemo(() => {
-    return mockAssignments.find((a) => a.id === contractorProjectAssignmentId);
-  }, [contractorProjectAssignmentId]);
+    return parentAssignments.find((a) => a.id === contractorProjectAssignmentId);
+  }, [contractorProjectAssignmentId, parentAssignments]);
 
   // Overlap Check
   const overlapError = useMemo(() => {
@@ -65,11 +70,11 @@ export function LabourAssignmentForm({ mode = 'create', initialData }: LabourAss
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    const existingAssignments = mockLabourAssignments.filter(
+    const existing = existingAssignments.filter(
       (la) => la.labourId === labourId && la.id !== initialData?.id
     );
 
-    const hasOverlap = existingAssignments.some((la) => {
+    const hasOverlap = existing.some((la) => {
       if (!la.startDate || !la.endDate) return false;
       const exStart = new Date(la.startDate);
       const exEnd = new Date(la.endDate);
@@ -80,7 +85,7 @@ export function LabourAssignmentForm({ mode = 'create', initialData }: LabourAss
       return 'This labour already has an assignment during the selected period.';
     }
     return null;
-  }, [labourId, startDate, endDate, initialData?.id]);
+  }, [labourId, startDate, endDate, initialData?.id, existingAssignments]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -124,37 +129,24 @@ export function LabourAssignmentForm({ mode = 'create', initialData }: LabourAss
 
     setIsSubmitting(true);
 
-    // Mock API delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    let payload;
-    if (mode === 'create') {
-      payload = {
-        labourId,
-        contractorProjectAssignmentId,
-        startDate,
-        endDate,
-        notes: notes.trim() || null,
-      };
-    } else {
-      payload = {
-        startDate,
-        endDate,
-        notes: notes.trim() || null,
-      };
-    }
-
-    console.log(`Submitted Labour Assignment Payload (${mode}):`, payload);
+    setIsSubmitting(true); setFormError('');
+    try {
+    const payload = { startDate: new Date(startDate).toISOString(), endDate: new Date(endDate).toISOString(), notes: notes.trim() || undefined };
+    if (mode === 'edit' && initialData) await labourAssignmentsApi.update(initialData.id, payload);
+    else await labourAssignmentsApi.create({ ...payload, labourId, contractorProjectAssignmentId });
 
     if (mode === 'edit' && initialData) {
       router.push(`/labour-assignments/${initialData.id}`);
     } else {
       router.push('/labour-assignments');
     }
+    } catch (error: any) { setFormError(error?.response?.data?.message || 'Unable to save labour assignment. Please try again.'); }
+    finally { setIsSubmitting(false); }
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full min-w-0">
+      {formError && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{formError}</div>}
       
       {/* Section 1: Assignment */}
       <Card className="overflow-visible">

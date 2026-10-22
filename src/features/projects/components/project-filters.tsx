@@ -4,9 +4,10 @@ import { Select } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
 import { Search } from '@/src/components/ui/icons';
 import { ProjectStatus } from '../types/project.types';
-import { mockProjects } from '../data/projects.mock';
+import { Project } from '../types/project.types';
 
 interface ProjectFiltersProps {
+  projects: Project[];
   searchQuery: string;
   onSearchChange: (value: string) => void;
   statusFilter: ProjectStatus | 'ALL';
@@ -22,9 +23,11 @@ const statusOptions = [
   { value: 'Active', label: 'Active' },
   { value: 'Completed', label: 'Completed' },
   { value: 'On Hold', label: 'On Hold' },
+  { value: 'Cancelled', label: 'Cancelled' },
 ];
 
 export function ProjectFilters({
+  projects,
   searchQuery,
   onSearchChange,
   statusFilter,
@@ -34,7 +37,7 @@ export function ProjectFilters({
   onReset
 }: ProjectFiltersProps) {
   // Extract unique customers
-  const uniqueCustomers = Array.from(new Set(mockProjects.map(p => p.customerName))).map(name => ({
+  const uniqueCustomers = Array.from(new Set(projects.map(p => p.customerName))).map(name => ({
     value: name,
     label: name
   }));

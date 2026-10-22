@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
@@ -10,7 +10,9 @@ import { Select } from '@/src/components/ui/select';
 import { FormField } from '@/src/components/ui/form-field';
 import { Progress } from '@/src/components/ui/progress';
 import { Project, ProjectStatus } from '../types/project.types';
-import { mockCustomers } from '@/src/features/customers/data/customers.mock';
+import { customersApi } from '@/src/features/customers/api/customers.api';
+import { projectsApi } from '../api/projects.api';
+import type { Customer } from '@/src/features/customers/types/customer.types';
 
 interface ProjectFormProps {
   mode: 'create' | 'edit';
@@ -31,11 +33,14 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [formError, setFormError] = useState('');
+  useEffect(() => { customersApi.getCustomers().then((response) => setCustomers(response.data.customers)).catch(() => setFormError('Unable to load customers. Please retry the page.')); }, []);
 
   // We add an empty default option for customer so it forces selection
   const customerOptions = [
     { value: '', label: 'Select a customer' },
-    ...mockCustomers.map(c => ({
+    ...customers.map(c => ({
       value: c.id,
       label: c.name
     }))
@@ -71,29 +76,24 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
 
     setIsSubmitting(true);
     
-    // Mock submission delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    console.log('Submitted Mock Payload:', {
-      name,
-      customerId,
-      description,
-      status,
-      startDate,
-      plannedEndDate,
-      budget: budget ? Number(budget) : undefined,
-      progress
-    });
-
+    setFormError('');
+    try {
+    const statusValue = ({ Planning: 'PLANNING', Active: 'ACTIVE', Completed: 'COMPLETED', 'On Hold': 'ON_HOLD', Cancelled: 'CANCELLED' } as const)[status];
+    const payload = { name: name.trim(), customerId, country: 'Saudi Arabia', description: description.trim() || undefined, status: statusValue, plannedStartDate: startDate || undefined, plannedEndDate: plannedEndDate || undefined, budget: budget ? Number(budget) : undefined, progress };
+    if (mode === 'edit' && initialData?.id) await projectsApi.update(initialData.id, payload);
+    else await projectsApi.create(payload);
     if (mode === 'edit' && initialData?.id) {
       router.push(`/projects/${initialData.id}`);
     } else {
       router.push('/projects');
     }
+    } catch (error: any) { setFormError(error?.response?.data?.message || 'Unable to save project. Please try again.'); }
+    finally { setIsSubmitting(false); }
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full min-w-0">
+      {formError && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{formError}</div>}
       
       <Card>
         <CardHeader>
