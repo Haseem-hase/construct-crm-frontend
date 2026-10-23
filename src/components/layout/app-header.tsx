@@ -4,15 +4,25 @@ import React, { useState } from 'react';
 import { Menu, Search, Bell, ChevronDown } from '@/src/components/ui/icons';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/src/features/auth/context/use-auth';
 
 export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
   
   const pathSegments = pathname?.split('/').filter(Boolean) || [];
   const currentPage = pathSegments.length > 0 
     ? pathSegments[0].charAt(0).toUpperCase() + pathSegments[0].slice(1) 
     : 'Dashboard';
+
+  const handleLogout = async () => {
+    setIsProfileOpen(false);
+    await logout();
+    router.replace('/login');
+  };
 
   return (
     <header className="h-16 border-b border-neutral-200/60 bg-white/80 backdrop-blur-md sticky top-0 z-20 px-4 lg:px-8 flex items-center justify-between">
@@ -68,7 +78,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
                 <Link href="/settings" className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900">Profile</Link>
                 <Link href="/settings" className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900">Settings</Link>
                 <div className="border-t border-neutral-100 my-1"></div>
-                <Link href="/login" className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Logout</Link>
+                <button type="button" onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Logout</button>
               </div>
             </>
           )}

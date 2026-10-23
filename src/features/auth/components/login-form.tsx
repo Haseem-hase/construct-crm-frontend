@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/use-auth';
@@ -12,17 +12,8 @@ export function LoginForm() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { login } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -40,9 +31,7 @@ export function LoginForm() {
       isSuccess = true;
       setShowSuccessAlert(true);
       
-      timeoutRef.current = setTimeout(() => {
-        router.push('/dashboard');
-      }, 1500);
+      router.replace('/dashboard');
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         setErrorMsg(

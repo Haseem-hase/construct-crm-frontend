@@ -21,6 +21,12 @@ type Subscriber = {
 let isRefreshing = false;
 let refreshSubscribers: Subscriber[] = [];
 
+function notifySessionExpired() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('constructcrm:session-expired'));
+  }
+}
+
 function onRefreshed(token: string) {
   refreshSubscribers.forEach(({ resolve }) => resolve(token));
   refreshSubscribers = [];
@@ -60,12 +66,19 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    if (error.response?.status === 401 && originalRequest._retry) {
+      clearTokens();
+      notifySessionExpired();
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       const refreshToken = getRefreshToken();
       if (!refreshToken) {
         clearTokens();
+        notifySessionExpired();
         return Promise.reject(error);
       }
 
@@ -102,6 +115,7 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         clearTokens();
         onRefreshFailed(refreshError);
+        notifySessionExpired();
         return Promise.reject(error);
       } finally {
         isRefreshing = false;
