@@ -19,7 +19,7 @@ import { Button } from '@/src/components/ui/button';
 export default function ContractorEditPage({
   params,
 }: {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const resolvedParams = 'then' in params ? use(params) : params;
   const id = resolvedParams?.id || '';

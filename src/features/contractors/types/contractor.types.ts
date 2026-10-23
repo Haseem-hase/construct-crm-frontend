@@ -52,7 +52,7 @@ export interface UpdateContractorRequest {
   profileImageUrl?: string;
   nationalId?: string;
   licenseNumber?: string;
-  licenseExpiryDate?: string;
+  licenseExpiryDate?: string | null;
   status?: ApiContractorStatus;
   notes?: string;
 }

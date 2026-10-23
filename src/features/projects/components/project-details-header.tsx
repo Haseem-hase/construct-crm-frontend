@@ -8,7 +8,7 @@ import { PageHeader } from '@/src/components/ui/page-header';
 
 interface ProjectDetailsHeaderProps {
   project: Project;
-  onStatusChange: (newStatus: ProjectStatus) => void;
+  onStatusChange: (newStatus: ProjectStatus) => Promise<void> | void;
 }
 
 function getStatusVariant(status: string): 'default' | 'success' | 'warning' | 'destructive' | 'info' | 'neutral' {
@@ -17,6 +17,7 @@ function getStatusVariant(status: string): 'default' | 'success' | 'warning' | '
     case 'Planning': return 'info';
     case 'On Hold': return 'warning';
     case 'Completed': return 'neutral';
+    case 'Cancelled': return 'destructive';
     default: return 'default';
   }
 }

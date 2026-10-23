@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { mockLabour } from '@/src/features/labour/data/labour.mock';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { labourApi } from '@/src/features/labour/api/labour.api';
+import { Labour } from '@/src/features/labour/types/labour.types';
 import { LabourDetailsClient } from '@/src/features/labour/components/labour-details-client';
 import { Button } from '@/src/components/ui/button';
 import { ChevronLeft } from '@/src/components/ui/icons';
@@ -11,12 +12,11 @@ import Link from 'next/link';
 
 export default function LabourDetailsPage() {
   const params = useParams();
-  const router = useRouter();
   const labourId = params?.id as string;
-
-  const labour = useMemo(() => {
-    return mockLabour.find(l => l.id === labourId);
-  }, [labourId]);
+  const [labour, setLabour] = useState<Labour>();
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { labourApi.get(labourId).then((l) => setLabour({ ...l, professionName: l.profession.name, email: l.email ?? undefined, dateOfBirth: l.dateOfBirth ?? undefined, address: l.address ?? undefined, emergencyContactName: l.emergencyContactName ?? undefined, emergencyContactPhone: l.emergencyContactPhone ?? undefined, joiningDate: l.joiningDate ?? undefined, profileImageUrl: l.profileImageUrl ?? undefined, notes: l.notes ?? undefined })).catch(() => setLabour(undefined)).finally(() => setLoading(false)); }, [labourId]);
+  if (loading) return <p className="py-12 text-center text-sm text-neutral-500">Loading labour record…</p>;
 
   if (!labour) {
     return (

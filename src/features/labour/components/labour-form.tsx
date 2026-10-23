@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
@@ -11,7 +11,8 @@ import { FormField } from '@/src/components/ui/form-field';
 import { User } from '@/src/components/ui/icons';
 import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
 import { Labour } from '../types/labour.types';
-import { SAUDI_CITIES, LABOUR_PROFESSIONS } from '../data/labour-options';
+import { labourApi } from '../api/labour.api';
+import { labourLookupsApi, LookupItem } from '../api/labour-lookups.api';
 
 interface LabourFormProps {
   mode?: 'create' | 'edit';
@@ -48,15 +49,18 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [professions, setProfessions] = useState<LookupItem[]>([]);
+  const [formError, setFormError] = useState('');
+  useEffect(() => { labourLookupsApi.professions().then(setProfessions).catch(() => setFormError('Unable to load professions. Please retry the page.')); }, []);
 
   const cityOptions = [
     { value: '', label: 'Select city' },
-    ...SAUDI_CITIES.map(c => ({ value: c, label: c }))
+    ...Array.from(new Set(['Riyadh', 'Jeddah', 'Dammam', 'Mecca', 'Medina', 'Other'])).map(c => ({ value: c, label: c }))
   ];
 
   const professionOptions = [
     { value: '', label: 'Select profession' },
-    ...LABOUR_PROFESSIONS
+    ...professions.map((p) => ({ value: p.id, label: p.name }))
   ];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,10 +116,9 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
 
     setIsSubmitting(true);
 
-    // Mock API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    console.log('Submitted Mock Payload:', {
+    setFormError('');
+    try {
+    const payload = {
       professionId,
       fullName: fullName.trim(),
       phone: phone.trim(),
@@ -128,14 +131,24 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
       emergencyContactName: emergencyContactName.trim() || undefined,
       emergencyContactPhone: emergencyContactPhone.trim() || undefined,
       joiningDate: joiningDate ? new Date(joiningDate).toISOString() : undefined,
-      notes: notes.trim() || undefined
-    });
+      notes: notes.trim() || undefined,
+    };
+    if (profileImageUrl.startsWith('blob:')) {
+      setFormError('Profile photo upload is not available in the backend yet. Remove the local preview or use a hosted image URL.');
+      setIsSubmitting(false);
+      return;
+    }
+    if (mode === 'edit' && initialData?.id) await labourApi.update(initialData.id, payload);
+    else await labourApi.create(payload);
 
     if (mode === 'edit' && initialData?.id) {
       router.push(`/labour/${initialData.id}`);
     } else {
       router.push('/labour');
     }
+    } catch (error: any) {
+      setFormError(error?.response?.data?.message || 'Unable to save labour. Please try again.');
+    } finally { setIsSubmitting(false); }
   };
 
   return (
@@ -202,6 +215,7 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
       </Card>
 
       {/* Card 2: Profile */}
+      {formError && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{formError}</div>}
       <Card>
         <CardHeader>
           <CardTitle>Profile</CardTitle>

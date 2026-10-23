@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { ApiContractor, ApiContractorStatus } from '../types/contractor.types';
@@ -12,11 +12,11 @@ import { Button } from '@/src/components/ui/button';
 import { Badge } from '@/src/components/ui/badge';
 import { User } from '@/src/components/ui/icons';
 import { PageHeader } from '@/src/components/ui/page-header';
-import { SuccessAlert } from '@/src/components/ui/success-alert';
 import { ContractorStatusActions } from './contractor-status-actions';
 
 interface ContractorDetailsHeaderProps {
   contractor: ApiContractor;
+  onStatusSuccess?: (message: string) => void;
 }
 
 function getStatusVariant(status: ApiContractorStatus): 'default' | 'success' | 'warning' | 'destructive' | 'info' | 'neutral' {
@@ -36,25 +36,13 @@ function getStatusVariant(status: ApiContractorStatus): 'default' | 'success' | 
   }
 }
 
-export function ContractorDetailsHeader({ contractor }: ContractorDetailsHeaderProps) {
+export function ContractorDetailsHeader({ contractor, onStatusSuccess }: ContractorDetailsHeaderProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
   const updateStatus = useAppSelector(selectUpdateContractorStatus);
   const updateError = useAppSelector(selectUpdateContractorError);
   const isUpdating = updateStatus === 'loading';
-
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
 
   const handleStatusChange = async (newStatus: ApiContractorStatus) => {
     dispatch(resetUpdateState());
@@ -66,23 +54,13 @@ export function ContractorDetailsHeader({ contractor }: ContractorDetailsHeaderP
     );
 
     if (updateContractor.fulfilled.match(resultAction)) {
-      setSuccessMessage(resultAction.payload.message || `Status updated to ${newStatus}`);
-      setShowSuccess(true);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        setShowSuccess(false);
-      }, 3500);
+      const message = resultAction.payload.message || `Status updated to ${newStatus}`;
+      onStatusSuccess?.(message);
     }
   };
 
   return (
     <>
-      <SuccessAlert
-        show={showSuccess}
-        title="Status Updated"
-        description={successMessage}
-      />
-
       {updateStatus === 'failed' && updateError && (
         <div className="p-4 mb-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
           <div className="flex justify-between items-start">

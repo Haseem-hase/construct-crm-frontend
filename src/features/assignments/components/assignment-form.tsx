@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Assignment } from '../types/assignment.types';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
@@ -10,10 +10,10 @@ import { Textarea } from '@/src/components/ui/textarea';
 import { Select } from '@/src/components/ui/select';
 import { MultiSelect } from '@/src/components/ui/multi-select';
 import { FormField } from '@/src/components/ui/form-field';
-import { mockProjects } from '@/src/features/projects/data/projects.mock';
-import { mockContractors } from '@/src/features/contractors/data/contractors.mock';
-import { mockAssignments } from '@/src/features/assignments/data/assignments.mock';
-import { RESPONSIBILITY_OPTIONS } from '../data/assignment-options';
+import { projectsApi, ApiProject } from '@/src/features/projects/api/projects.api';
+import { contractorsApi } from '@/src/features/contractors/api/contractors.api';
+import { assignmentsApi, ApiContractorAssignment } from '../api/assignments.api';
+import { assignmentLookupsApi } from '../api/assignment-lookups.api';
 
 interface AssignmentFormProps {
   mode?: 'create' | 'edit';
@@ -40,27 +40,33 @@ export function AssignmentForm({ mode = 'create', initialData }: AssignmentFormP
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [projects, setProjects] = useState<ApiProject[]>([]);
+  const [contractors, setContractors] = useState<{ id: string; fullName: string; contractorCode: string; status: string }[]>([]);
+  const [responsibilities, setResponsibilities] = useState<{ id: string; name: string }[]>([]);
+  const [assignments, setAssignments] = useState<ApiContractorAssignment[]>([]);
+  const [formError, setFormError] = useState('');
+  useEffect(() => { Promise.all([projectsApi.list(), contractorsApi.getContractors(), assignmentLookupsApi.responsibilities(), assignmentsApi.list()]).then(([p, c, r, a]) => { setProjects(p); setContractors(c.data.contractors); setResponsibilities(r); setAssignments(a); }).catch((error: any) => setFormError(error?.response?.data?.message || 'Unable to load assignment options.')); }, []);
 
   // Derived Options
   const projectOptions = useMemo(() => {
-    return mockProjects
-      .filter((p) => p.status === 'Planning' || p.status === 'Active')
+    return projects
+      .filter((p) => p.status === 'PLANNING' || p.status === 'ACTIVE')
       .map((p) => ({
         value: p.id,
         label: `${p.name} (${p.projectCode})`,
       }));
-  }, []);
+  }, [projects]);
 
   const contractorOptions = useMemo(() => {
-    return mockContractors
-      .filter((c) => c.status === 'Active')
+    return contractors
+      .filter((c) => c.status === 'ACTIVE')
       .map((c) => ({
         value: c.id,
-        label: `${c.companyName} (${c.contractorCode})`,
+        label: `${c.fullName} (${c.contractorCode})`,
       }));
-  }, []);
+  }, [contractors]);
 
-  const responsibilityMultiSelectOptions = RESPONSIBILITY_OPTIONS.map((r) => ({
+  const responsibilityMultiSelectOptions = responsibilities.map((r) => ({
     value: r.id,
     label: r.name,
   }));
@@ -69,14 +75,14 @@ export function AssignmentForm({ mode = 'create', initialData }: AssignmentFormP
   const duplicateError = useMemo(() => {
     if (mode === 'edit') return null;
     if (!projectId || !contractorId) return null;
-    const exists = mockAssignments.some(
+    const exists = assignments.some(
       (a) => a.projectId === projectId && a.contractorId === contractorId
     );
     if (exists) {
       return 'This contractor is already assigned to this project.';
     }
     return null;
-  }, [projectId, contractorId, mode]);
+  }, [projectId, contractorId, mode, assignments]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -102,41 +108,24 @@ export function AssignmentForm({ mode = 'create', initialData }: AssignmentFormP
 
     setIsSubmitting(true);
 
-    // Mock API delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    let payload;
-    if (mode === 'create') {
-      payload = {
-        projectId,
-        contractorId,
-        responsibilityIds,
-        scope: scope.trim() || null,
-        startDate,
-        endDate,
-        notes: notes.trim() || null,
-      };
-    } else {
-      payload = {
-        responsibilityIds,
-        scope: scope.trim() || null,
-        startDate,
-        endDate,
-        notes: notes.trim() || null,
-      };
-    }
-
-    console.log(`Submitted Assignment Payload (${mode}):`, payload);
+    setIsSubmitting(true); setFormError('');
+    try {
+    const payload = { responsibilityIds, scopeDescription: scope.trim() || undefined, startDate: new Date(startDate).toISOString(), endDate: new Date(endDate).toISOString(), notes: notes.trim() || undefined };
+    if (mode === 'edit' && initialData) await assignmentsApi.update(initialData.id, payload);
+    else await assignmentsApi.create({ ...payload, projectId, contractorId });
 
     if (mode === 'edit' && initialData) {
       router.push(`/assignments/${initialData.id}`);
     } else {
       router.push('/assignments');
     }
+    } catch (error: any) { setFormError(error?.response?.data?.message || 'Unable to save assignment. Please try again.'); }
+    finally { setIsSubmitting(false); }
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full min-w-0">
+      {formError && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{formError}</div>}
       
       {/* Section 1: Assignment */}
       <Card className="overflow-visible">

@@ -63,6 +63,18 @@ export interface GetRoleResponse {
   };
 }
 
+export interface GetGlobalRolesResponse {
+  success: boolean;
+  message: string;
+  data: { roles: BaseRole[] };
+}
+
+export interface GetGlobalRoleResponse {
+  success: boolean;
+  message: string;
+  data: { role: BaseRole };
+}
+
 export interface GetPermissionsResponse {
   success: boolean;
   data: {

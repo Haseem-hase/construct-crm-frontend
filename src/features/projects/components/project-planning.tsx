@@ -5,7 +5,7 @@ import { InlineEdit } from '@/src/components/ui/inline-edit';
 
 interface ProjectPlanningProps {
   project: Project;
-  onUpdate?: (updates: Partial<Project>) => void;
+  onUpdate?: (updates: Partial<Project>) => Promise<boolean | void> | boolean | void;
 }
 
 function formatDate(isoString?: string) {
@@ -47,7 +47,7 @@ export function ProjectPlanning({ project, onUpdate }: ProjectPlanningProps) {
                 if (newDate && project.plannedEndDate && new Date(newDate) > new Date(project.plannedEndDate)) {
                   return false;
                 }
-                if (onUpdate) onUpdate({ startDate: newDate });
+                if (onUpdate) return onUpdate({ startDate: newDate });
               }}
               displayValue={
                 formattedStart ? formattedStart : <span className="text-neutral-400 italic">Not provided</span>
@@ -64,7 +64,7 @@ export function ProjectPlanning({ project, onUpdate }: ProjectPlanningProps) {
                 if (newDate && project.startDate && new Date(project.startDate) > new Date(newDate)) {
                   return false;
                 }
-                if (onUpdate) onUpdate({ plannedEndDate: newDate });
+                if (onUpdate) return onUpdate({ plannedEndDate: newDate });
               }}
               displayValue={
                 formattedEnd ? formattedEnd : <span className="text-neutral-400 italic">Not provided</span>

@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Project } from '../types/project.types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
-import { mockCustomers } from '@/src/features/customers/data/customers.mock';
+import { Customer } from '@/src/features/customers/types/customer.types';
+import { fetchCustomers, selectCustomers, selectCustomersListStatus, selectCustomersListError } from '@/src/features/customers/store/customersSlice';
+import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { InlineEdit } from '@/src/components/ui/inline-edit';
+import { Button } from '@/src/components/ui/button';
 
 interface ProjectCustomerProps {
   project: Project;
-  onUpdate?: (updates: Partial<Project>) => void;
+  onUpdate?: (updates: Partial<Project>) => Promise<boolean | void> | boolean | void;
 }
 
 function DetailItem({ label, children }: { label: string, children: React.ReactNode }) {
@@ -19,10 +22,14 @@ function DetailItem({ label, children }: { label: string, children: React.ReactN
 }
 
 export function ProjectCustomer({ project, onUpdate }: ProjectCustomerProps) {
-  // Resolve customer details from mock data
-  const customer = mockCustomers.find(c => c.id === project.customerId);
+  const dispatch = useAppDispatch();
+  const customers = useAppSelector(selectCustomers);
+  const listStatus = useAppSelector(selectCustomersListStatus);
+  const listError = useAppSelector(selectCustomersListError);
+  useEffect(() => { if (listStatus === 'idle') void dispatch(fetchCustomers()); }, [dispatch, listStatus]);
+  const customer: Customer | undefined = customers.find(c => c.id === project.customerId);
 
-  const customerOptions = mockCustomers.map(c => ({
+  const customerOptions = customers.map(c => ({
     value: c.id,
     label: c.name
   }));
@@ -39,16 +46,12 @@ export function ProjectCustomer({ project, onUpdate }: ProjectCustomerProps) {
               editor="select"
               options={customerOptions}
               value={project.customerId}
+              disabled={listStatus === 'loading' || customers.length === 0}
               onSave={(val) => {
                 if (!val) return false;
-                if (onUpdate) {
-                  const newCust = mockCustomers.find(c => c.id === val);
-                  if (newCust) {
-                    onUpdate({ customerId: val, customerName: newCust.name });
-                  } else {
-                    return false;
-                  }
-                }
+                if (val === project.customerId) return true;
+                if (!onUpdate || !customers.some(c => c.id === val)) return false;
+                return onUpdate({ customerId: val, customerName: customers.find(c => c.id === val)?.name || '' });
               }}
               displayValue={
                 <span className="font-medium">{project.customerName}</span>
@@ -56,13 +59,13 @@ export function ProjectCustomer({ project, onUpdate }: ProjectCustomerProps) {
             />
           </DetailItem>
           
-          {customer ? (
+          {customer || project.customerType || project.customerCode ? (
             <>
               <DetailItem label="Customer Type">
-                {customer.type}
+                {customer?.type || project.customerType || 'Not available'}
               </DetailItem>
               <DetailItem label="Customer Code">
-                <span className="font-mono text-neutral-600">{customer.customerCode}</span>
+                <span className="font-mono text-neutral-600">{customer?.customerCode || project.customerCode || 'Not available'}</span>
               </DetailItem>
             </>
           ) : (
@@ -70,6 +73,8 @@ export function ProjectCustomer({ project, onUpdate }: ProjectCustomerProps) {
               <span className="text-neutral-400 italic">Not available</span>
             </DetailItem>
           )}
+          {listStatus === 'loading' && <p className="text-xs text-neutral-500">Loading customers…</p>}
+          {listError && <p role="alert" className="text-xs text-red-600">{listError} <Button type="button" variant="ghost" size="sm" className="h-auto p-0 text-xs underline" onClick={() => void dispatch(fetchCustomers())}>Retry</Button></p>}
         </div>
       </CardContent>
     </Card>

@@ -7,7 +7,7 @@ import { InlineEdit } from '@/src/components/ui/inline-edit';
 
 interface ProjectOverviewProps {
   project: Project;
-  onUpdate?: (updates: Partial<Project>) => void;
+  onUpdate?: (updates: Partial<Project>) => Promise<boolean | void> | boolean | void;
 }
 
 function formatDate(isoString: string) {
@@ -25,6 +25,7 @@ function getStatusVariant(status: string): 'default' | 'success' | 'warning' | '
     case 'Planning': return 'info';
     case 'On Hold': return 'warning';
     case 'Completed': return 'neutral';
+    case 'Cancelled': return 'destructive';
     default: return 'default';
   }
 }
@@ -51,7 +52,7 @@ export function ProjectOverview({ project, onUpdate }: ProjectOverviewProps) {
               value={project.name}
               onSave={(val) => {
                 if (!val.trim()) return false;
-                if (onUpdate) onUpdate({ name: val });
+                if (onUpdate) return onUpdate({ name: val });
               }}
             />
           </DetailItem>
@@ -73,7 +74,7 @@ export function ProjectOverview({ project, onUpdate }: ProjectOverviewProps) {
               onSave={(val) => {
                 const num = parseInt(val, 10);
                 if (isNaN(num) || num < 0 || num > 100) return false;
-                if (onUpdate) onUpdate({ progress: num });
+                if (onUpdate) return onUpdate({ progress: num });
               }}
               displayValue={
                 <Progress value={project.progress} showValue className="w-full max-w-[200px]" />
