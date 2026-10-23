@@ -5,13 +5,14 @@ import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
 
 interface ProjectStatusActionsProps {
   status: ProjectStatus;
-  onStatusChange: (newStatus: ProjectStatus) => void;
+  onStatusChange: (newStatus: ProjectStatus) => Promise<void> | void;
 }
 
 type ActionType = 'Activate' | 'Put On Hold' | 'Mark Completed' | 'Resume' | null;
 
 export function ProjectStatusActions({ status, onStatusChange }: ProjectStatusActionsProps) {
   const [pendingAction, setPendingAction] = useState<ActionType>(null);
+  const [saveError, setSaveError] = useState('');
 
   const getDialogConfig = () => {
     switch (pendingAction) {
@@ -52,12 +53,13 @@ export function ProjectStatusActions({ status, onStatusChange }: ProjectStatusAc
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const config = getDialogConfig();
     if (config) {
-      onStatusChange(config.nextStatus);
+      setSaveError('');
+      try { await onStatusChange(config.nextStatus); setPendingAction(null); }
+      catch (error: any) { setSaveError(error?.message || 'Unable to update project status.'); throw error; }
     }
-    setPendingAction(null);
   };
 
   const dialogConfig = getDialogConfig();
@@ -93,7 +95,7 @@ export function ProjectStatusActions({ status, onStatusChange }: ProjectStatusAc
         open={pendingAction !== null}
         onOpenChange={(open) => !open && setPendingAction(null)}
         title={dialogConfig?.title || ''}
-        description={dialogConfig?.description || ''}
+        description={saveError ? <>{dialogConfig?.description}<span className="mt-2 block text-sm text-red-600">{saveError}</span></> : dialogConfig?.description || ''}
         confirmLabel={dialogConfig?.confirmLabel || ''}
         cancelLabel="Cancel"
         onConfirm={handleConfirm}

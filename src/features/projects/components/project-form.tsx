@@ -12,6 +12,8 @@ import { Progress } from '@/src/components/ui/progress';
 import { Project, ProjectStatus } from '../types/project.types';
 import { customersApi } from '@/src/features/customers/api/customers.api';
 import { projectsApi } from '../api/projects.api';
+import { createProject, updateProject } from '../store/projectsSlice';
+import { useAppDispatch } from '@/src/store/hooks';
 import type { Customer } from '@/src/features/customers/types/customer.types';
 
 interface ProjectFormProps {
@@ -21,21 +23,31 @@ interface ProjectFormProps {
 
 export function ProjectForm({ mode, initialData }: ProjectFormProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   
   const [name, setName] = useState(initialData?.name || '');
   const [customerId, setCustomerId] = useState(initialData?.customerId || '');
   const [description, setDescription] = useState(initialData?.description || '');
+  const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || '');
   const [status, setStatus] = useState<ProjectStatus>(initialData?.status || 'Planning');
   const [startDate, setStartDate] = useState(initialData?.startDate?.split('T')[0] || '');
   const [plannedEndDate, setPlannedEndDate] = useState(initialData?.plannedEndDate?.split('T')[0] || '');
-  const [budget, setBudget] = useState<string>('');
+  const [budget, setBudget] = useState<string>(initialData?.budget?.toString() || '');
   const [progress, setProgress] = useState<number>(initialData?.progress || 0);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customersLoading, setCustomersLoading] = useState(true);
+  const [customersError, setCustomersError] = useState('');
   const [formError, setFormError] = useState('');
-  useEffect(() => { customersApi.getCustomers().then((response) => setCustomers(response.data.customers)).catch(() => setFormError('Unable to load customers. Please retry the page.')); }, []);
+  const loadCustomers = async () => {
+    setCustomersLoading(true); setCustomersError('');
+    try { const response = await customersApi.getCustomers(); setCustomers(response.data.customers); }
+    catch (error: any) { setCustomersError(error?.response?.data?.message || 'Unable to load customers.'); }
+    finally { setCustomersLoading(false); }
+  };
+  useEffect(() => { void loadCustomers(); }, []);
 
   // We add an empty default option for customer so it forces selection
   const customerOptions = [
@@ -51,12 +63,14 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
     { value: 'Active', label: 'Active' },
     { value: 'Completed', label: 'Completed' },
     { value: 'On Hold', label: 'On Hold' },
+    { value: 'Cancelled', label: 'Cancelled' },
   ];
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = 'Project name is required.';
-    if (!customerId) newErrors.customerId = 'Customer is required.';
+    if (!customerId) newErrors.customerId = customers.length ? 'Customer is required.' : 'Create or load a customer before saving this project.';
+    if (imageUrl && !/^https?:\/\//i.test(imageUrl)) newErrors.imageUrl = 'Enter a valid http or https image URL.';
     if (budget && Number(budget) < 0) newErrors.budget = 'Budget cannot be negative.';
     if (progress < 0 || progress > 100) newErrors.progress = 'Progress must be between 0 and 100.';
     
@@ -79,15 +93,23 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
     setFormError('');
     try {
     const statusValue = ({ Planning: 'PLANNING', Active: 'ACTIVE', Completed: 'COMPLETED', 'On Hold': 'ON_HOLD', Cancelled: 'CANCELLED' } as const)[status];
-    const payload = { name: name.trim(), customerId, country: 'Saudi Arabia', description: description.trim() || undefined, status: statusValue, plannedStartDate: startDate || undefined, plannedEndDate: plannedEndDate || undefined, budget: budget ? Number(budget) : undefined, progress };
-    if (mode === 'edit' && initialData?.id) await projectsApi.update(initialData.id, payload);
-    else await projectsApi.create(payload);
+    const commonPayload = { name: name.trim(), description: description.trim() || null, imageUrl: imageUrl.trim() || null, status: statusValue, plannedStartDate: startDate || null, plannedEndDate: plannedEndDate || null, budget: budget ? Number(budget) : null, progress };
+    if (mode === 'edit' && initialData?.id) {
+      await dispatch(updateProject({ id: initialData.id, payload: commonPayload })).unwrap();
+      if (customerId !== initialData.customerId) {
+        const existingRelation = initialData.projectCustomerRelations?.find((relation) => relation.customerId === customerId);
+        if (existingRelation) await projectsApi.updateCustomerRelationship(initialData.id, existingRelation.id, { isPrimary: true });
+        else await projectsApi.addCustomer(initialData.id, customerId);
+      }
+    } else {
+      await dispatch(createProject({ name: commonPayload.name, country: 'Saudi Arabia', status: commonPayload.status, progress: commonPayload.progress, customerId, ...(commonPayload.description ? { description: commonPayload.description } : {}), ...(commonPayload.imageUrl ? { imageUrl: commonPayload.imageUrl } : {}), ...(commonPayload.plannedStartDate ? { plannedStartDate: commonPayload.plannedStartDate } : {}), ...(commonPayload.plannedEndDate ? { plannedEndDate: commonPayload.plannedEndDate } : {}), ...(commonPayload.budget !== null ? { budget: commonPayload.budget } : {}) })).unwrap();
+    }
     if (mode === 'edit' && initialData?.id) {
       router.push(`/projects/${initialData.id}`);
     } else {
       router.push('/projects');
     }
-    } catch (error: any) { setFormError(error?.response?.data?.message || 'Unable to save project. Please try again.'); }
+    } catch (error: any) { setFormError(typeof error === 'string' ? error : error?.response?.data?.message || 'Unable to save project. Please try again.'); }
     finally { setIsSubmitting(false); }
   };
 
@@ -115,6 +137,13 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
                 value={customerId}
                 onChange={val => setCustomerId(val)}
               />
+            </FormField>
+            {customersLoading && <p className="text-sm text-neutral-500">Loading customers…</p>}
+            {customersError && <p role="alert" className="text-sm text-red-600 md:col-span-2">{customersError} <button type="button" className="underline" onClick={() => void loadCustomers()}>Retry</button></p>}
+            {!customersLoading && !customersError && customers.length === 0 && <p className="text-sm text-neutral-500 md:col-span-2">No customers available. Add a customer before creating a project.</p>}
+
+            <FormField label="Project Image URL" error={errors.imageUrl}>
+              <Input type="url" placeholder="https://example.com/project.jpg" value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
             </FormField>
 
             <div className="md:col-span-2">

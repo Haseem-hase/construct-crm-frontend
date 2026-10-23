@@ -5,7 +5,7 @@ import { InlineEdit } from '@/src/components/ui/inline-edit';
 
 interface ProjectFinancialsProps {
   project: Project;
-  onUpdate?: (updates: Partial<Project>) => void;
+  onUpdate?: (updates: Partial<Project>) => Promise<boolean | void> | boolean | void;
 }
 
 function formatCurrency(amount?: number) {
@@ -28,7 +28,7 @@ function DetailItem({ label, children }: { label: string, children: React.ReactN
 }
 
 export function ProjectFinancials({ project, onUpdate }: ProjectFinancialsProps) {
-  const formattedBudget = formatCurrency(project.budget);
+  const formattedBudget = formatCurrency(project.budget ?? undefined);
 
   return (
     <Card>
@@ -42,9 +42,10 @@ export function ProjectFinancials({ project, onUpdate }: ProjectFinancialsProps)
               editor="number"
               value={project.budget?.toString() || ''}
               onSave={(val) => {
+                if (!val.trim()) return onUpdate && onUpdate({ budget: null });
                 const num = parseFloat(val);
                 if (isNaN(num) || num < 0) return false;
-                if (onUpdate) onUpdate({ budget: num });
+                if (onUpdate) return onUpdate({ budget: num });
               }}
               displayValue={
                 formattedBudget ? formattedBudget : <span className="text-neutral-400 italic">Not provided</span>

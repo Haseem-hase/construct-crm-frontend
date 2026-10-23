@@ -22,7 +22,7 @@ export default function ProjectsPage() {
     setLoading(true); setLoadError('');
     try {
       const rows = await projectsApi.list();
-      setProjects(rows.map((p) => ({ id: p.id, projectCode: p.projectCode, name: p.name, customerId: p.projectCustomers?.[0]?.customer.id ?? '', customerName: p.projectCustomers?.[0]?.customer.name ?? '—', status: ({ PLANNING: 'Planning', ACTIVE: 'Active', COMPLETED: 'Completed', ON_HOLD: 'On Hold', CANCELLED: 'Cancelled' } as const)[p.status], progress: p.progress, startDate: p.plannedStartDate ?? '', plannedEndDate: p.plannedEndDate ?? '', description: p.description ?? undefined, budget: p.budget ?? undefined, createdAt: p.createdAt })));
+      setProjects(rows.map((p) => { const primary = p.projectCustomers?.find((r) => r.isPrimary) || p.projectCustomers?.[0]; return { id: p.id, projectCode: p.projectCode, name: p.name, customerId: primary?.customerId ?? '', customerName: primary?.customer?.name ?? '—', status: ({ PLANNING: 'Planning', ACTIVE: 'Active', COMPLETED: 'Completed', ON_HOLD: 'On Hold', CANCELLED: 'Cancelled' } as const)[p.status], progress: p.progress, startDate: p.plannedStartDate ?? '', plannedEndDate: p.plannedEndDate ?? '', description: p.description ?? undefined, budget: p.budget ?? undefined, createdAt: p.createdAt }; }));
     } catch (error: any) { setLoadError(error?.response?.data?.message || 'Unable to load projects.'); }
     finally { setLoading(false); }
   };
