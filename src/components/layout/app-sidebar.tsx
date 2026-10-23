@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/src/features/auth/context/use-auth';
 import { 
   LayoutDashboard, Users, FolderOpen, Hammer, 
   HardHat, ClipboardList, Shield, Settings, ChevronDown
@@ -45,6 +46,8 @@ const platformNavigation: NavItem[] = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.systemRole === 'SUPER_ADMIN';
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [lastPathname, setLastPathname] = useState<string | null>(null);
 
@@ -53,7 +56,7 @@ export function AppSidebar() {
     const newExpanded = { ...expandedItems };
     let changed = false;
     
-    [mainNavigation, adminNavigation, platformNavigation].forEach(nav => {
+    [mainNavigation, adminNavigation, ...(isSuperAdmin ? [platformNavigation] : [])].forEach(nav => {
       nav.forEach(item => {
         if (item.subItems) {
           const hasActiveSub = item.subItems.some(sub => pathname?.startsWith(sub.href));
@@ -165,14 +168,18 @@ export function AppSidebar() {
         </div>
         {renderNavItems(adminNavigation)}
 
-        <div className="my-6 border-t border-neutral-100" />
+        {isSuperAdmin && (
+          <>
+            <div className="my-6 border-t border-neutral-100" />
 
-        <div className="px-3 mb-3">
-          <h3 className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
-            Platform (Super Admin)
-          </h3>
-        </div>
-        {renderNavItems(platformNavigation)}
+            <div className="px-3 mb-3">
+              <h3 className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
+                Platform (Super Admin)
+              </h3>
+            </div>
+            {renderNavItems(platformNavigation)}
+          </>
+        )}
       </div>
 
       <div className="p-4 border-t border-neutral-200/60">

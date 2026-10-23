@@ -20,8 +20,9 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
 
   const handleLogout = async () => {
     setIsProfileOpen(false);
-    await logout();
+    const logoutRequest = logout();
     router.replace('/login');
+    await logoutRequest;
   };
 
   return (

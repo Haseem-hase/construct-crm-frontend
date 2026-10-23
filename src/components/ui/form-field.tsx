@@ -2,6 +2,7 @@ import React, { ReactNode } from 'react';
 
 export interface FormFieldProps {
   label: string;
+  htmlFor?: string;
   required?: boolean;
   error?: string;
   helperText?: string;
@@ -11,6 +12,7 @@ export interface FormFieldProps {
 
 export function FormField({
   label,
+  htmlFor,
   required,
   error,
   helperText,
@@ -19,7 +21,7 @@ export function FormField({
 }: FormFieldProps) {
   return (
     <div className={`space-y-2 ${className}`}>
-      <label className="block text-sm font-medium text-neutral-700">
+      <label htmlFor={htmlFor} className="block text-sm font-medium text-neutral-700">
         {label}
         {required && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
       </label>

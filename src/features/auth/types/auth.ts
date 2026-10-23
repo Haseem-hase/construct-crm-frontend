@@ -59,10 +59,10 @@ export interface MeUser {
   id: string;
   fullName: string;
   email: string;
-  phone: string;
-  organizationId: string;
-  systemRole: string | null;
-  organizationRole: OrganizationRole;
+  phone: string | null;
+  organizationId: string | null;
+  systemRole: 'SUPER_ADMIN' | null;
+  organizationRole: OrganizationRole | null;
 }
 
 export interface MeResponseData {

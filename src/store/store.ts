@@ -4,6 +4,7 @@ import rolesReducer from '../features/roles/store/rolesSlice';
 import customersReducer from '../features/customers/store/customersSlice';
 import contractorsReducer from '../features/contractors/store/contractorsSlice';
 import projectsReducer from '../features/projects/store/projectsSlice';
+import organizationsReducer from '../features/super-admin/store/organizationsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     customers: customersReducer,
     contractors: contractorsReducer,
     projects: projectsReducer,
+    organizations: organizationsReducer,
   },
 });
 

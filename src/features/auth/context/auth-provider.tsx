@@ -1,20 +1,22 @@
 'use client';
 
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, useRef, ReactNode } from 'react';
 import { AuthContext } from './auth-context';
 import { authApi } from '../api/auth-api';
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from '../../../lib/api/token';
-import { MeUser, LoginUser, LoginRequest } from '../types/auth';
+import { MeUser, LoginRequest } from '../types/auth';
 import axios from 'axios';
+import { invalidatePendingAuthRefreshes } from '../../../lib/api/client';
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<MeUser | LoginUser | null>(null);
+  const [user, setUser] = useState<MeUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const logoutRequestRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -70,9 +72,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const response = await authApi.login(credentials);
       if (response.success && response.data) {
-        const { accessToken, refreshToken, user: loggedInUser } = response.data;
+        const { accessToken, refreshToken } = response.data;
         setTokens(accessToken, refreshToken);
-        setUser(loggedInUser);
+        const meResponse = await authApi.getMe();
+        if (!meResponse.success || !meResponse.data?.user) {
+          clearTokens();
+          setUser(null);
+          setIsAuthenticated(false);
+          throw new Error('Unable to verify your account. Please try again.');
+        }
+        // Authorization decisions use the authenticated /auth/me payload,
+        // whose systemRole is nullable for organization users.
+        setUser(meResponse.data.user);
         setIsAuthenticated(true);
       } else {
         // If the backend returns a 200 with success: false (though unusual for standard errors)
@@ -93,18 +104,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => window.removeEventListener('constructcrm:session-expired', handleSessionExpired);
   }, []);
 
-  const logout = async () => {
+  const logout = () => {
+    if (logoutRequestRef.current) return logoutRequestRef.current;
+
     const refreshToken = getRefreshToken();
+    invalidatePendingAuthRefreshes();
     clearTokens();
     setUser(null);
     setIsAuthenticated(false);
-    if (refreshToken) {
+
+    const request = (async () => {
+      if (!refreshToken) return;
       try {
         await authApi.logout({ refreshToken });
-      } catch (error) {
+      } catch {
         // Local logout remains complete if the backend is unavailable.
       }
-    }
+    })();
+    logoutRequestRef.current = request.finally(() => {
+      logoutRequestRef.current = null;
+    });
+    return logoutRequestRef.current;
   };
 
   return (
