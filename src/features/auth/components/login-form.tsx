@@ -27,11 +27,11 @@ export function LoginForm() {
     let isSuccess = false;
 
     try {
-      await login({ email, password });
+      const verifiedUser = await login({ email, password });
       isSuccess = true;
       setShowSuccessAlert(true);
       
-      router.replace('/dashboard');
+      router.replace(verifiedUser.systemRole === 'SUPER_ADMIN' ? '/super-admin/dashboard' : '/dashboard');
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         setErrorMsg(

@@ -67,7 +67,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     initializeAuth();
   }, []);
 
-  const login = async (credentials: LoginRequest) => {
+  const login = async (credentials: LoginRequest): Promise<MeUser> => {
     setIsLoading(true);
     try {
       const response = await authApi.login(credentials);
@@ -85,6 +85,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // whose systemRole is nullable for organization users.
         setUser(meResponse.data.user);
         setIsAuthenticated(true);
+        return meResponse.data.user;
       } else {
         // If the backend returns a 200 with success: false (though unusual for standard errors)
         throw new Error('Login failed');

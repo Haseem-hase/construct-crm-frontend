@@ -6,12 +6,14 @@ import { LoginForm } from '@/src/features/auth/components/login-form';
 import { useAuth } from '@/src/features/auth/context/use-auth';
 
 export default function LoginPage() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) router.replace('/dashboard');
-  }, [isAuthenticated, isLoading, router]);
+    if (!isLoading && isAuthenticated) {
+      router.replace(user?.systemRole === 'SUPER_ADMIN' ? '/super-admin/dashboard' : '/dashboard');
+    }
+  }, [isAuthenticated, isLoading, router, user?.systemRole]);
 
   if (isLoading || isAuthenticated) {
     return <div className="min-h-screen bg-neutral-50" aria-busy="true" />;

@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Menu, Search, Bell, ChevronDown } from '@/src/components/ui/icons';
 import { usePathname } from 'next/navigation';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/features/auth/context/use-auth';
 
@@ -11,12 +10,27 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const displayName = user?.fullName?.trim() || user?.email || 'Account';
+  const displayRole = user?.systemRole === 'SUPER_ADMIN'
+    ? 'Super Admin'
+    : user?.organizationRole?.role.name || 'Organization user';
+  const initials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
   
   const pathSegments = pathname?.split('/').filter(Boolean) || [];
-  const currentPage = pathSegments.length > 0 
-    ? pathSegments[0].charAt(0).toUpperCase() + pathSegments[0].slice(1) 
-    : 'Dashboard';
+  const currentPage = pathname === '/super-admin/dashboard'
+    ? 'Platform Dashboard'
+    : pathSegments[0] === 'super-admin' && pathSegments[1]
+      ? pathSegments[1].charAt(0).toUpperCase() + pathSegments[1].slice(1)
+      : pathSegments.length > 0
+        ? pathSegments[0].charAt(0).toUpperCase() + pathSegments[0].slice(1)
+        : 'Dashboard';
 
   const handleLogout = async () => {
     setIsProfileOpen(false);
@@ -67,7 +81,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
             onClick={() => setIsProfileOpen(!isProfileOpen)}
           >
             <div className="w-8 h-8 bg-neutral-900 text-white flex items-center justify-center rounded-full text-xs font-medium">
-              AA
+              {initials || 'U'}
             </div>
             <ChevronDown className="w-4 h-4 text-neutral-500 hidden sm:block" />
           </button>
@@ -76,8 +90,10 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
             <>
               <div className="fixed inset-0 z-30" onClick={() => setIsProfileOpen(false)} />
               <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200/80 rounded-md shadow-[0_8px_30px_rgb(0,0,0,0.08)] py-1 z-40">
-                <Link href="/settings" className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900">Profile</Link>
-                <Link href="/settings" className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900">Settings</Link>
+                <div className="px-4 py-2">
+                  <p className="truncate text-sm font-medium text-neutral-900">{displayName}</p>
+                  <p className="text-xs text-neutral-500">{displayRole}</p>
+                </div>
                 <div className="border-t border-neutral-100 my-1"></div>
                 <button type="button" onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Logout</button>
               </div>

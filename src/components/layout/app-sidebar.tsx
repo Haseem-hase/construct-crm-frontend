@@ -16,7 +16,7 @@ type NavItem = {
   subItems?: { name: string; href: string }[];
 };
 
-const mainNavigation: NavItem[] = [
+const organizationNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Customers', href: '/customers', icon: Users },
   { name: 'Projects', href: '/projects', icon: FolderOpen },
@@ -38,16 +38,26 @@ const adminNavigation: NavItem[] = [
 ];
 
 const platformNavigation: NavItem[] = [
-  { name: 'Platform Dashboard', href: '/super-admin', icon: LayoutDashboard },
+  { name: 'Platform Dashboard', href: '/super-admin/dashboard', icon: LayoutDashboard },
   { name: 'Organizations', href: '/super-admin/organizations', icon: FolderOpen },
-  { name: 'Users', href: '/super-admin/users', icon: Users },
-  { name: 'System Settings', href: '/super-admin/settings', icon: Settings },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const isSuperAdmin = user?.systemRole === 'SUPER_ADMIN';
+  const displayName = user?.fullName?.trim() || user?.email || 'Account';
+  const displayRole = isSuperAdmin
+    ? 'Super Admin'
+    : user?.organizationRole?.role.name || 'Organization user';
+  const initials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+  const primaryNavigation = isSuperAdmin ? platformNavigation : organizationNavigation;
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [lastPathname, setLastPathname] = useState<string | null>(null);
 
@@ -56,7 +66,7 @@ export function AppSidebar() {
     const newExpanded = { ...expandedItems };
     let changed = false;
     
-    [mainNavigation, adminNavigation, ...(isSuperAdmin ? [platformNavigation] : [])].forEach(nav => {
+    [primaryNavigation, ...(!isSuperAdmin ? [adminNavigation] : [])].forEach(nav => {
       nav.forEach(item => {
         if (item.subItems) {
           const hasActiveSub = item.subItems.some(sub => pathname?.startsWith(sub.href));
@@ -157,21 +167,8 @@ export function AppSidebar() {
       </div>
 
       <div className="flex-1 px-3 py-4 overflow-y-auto">
-        {renderNavItems(mainNavigation)}
-        
-        <div className="my-6 border-t border-neutral-100" />
-        
-        <div className="px-3 mb-3">
-          <h3 className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
-            Administration
-          </h3>
-        </div>
-        {renderNavItems(adminNavigation)}
-
-        {isSuperAdmin && (
+        {isSuperAdmin ? (
           <>
-            <div className="my-6 border-t border-neutral-100" />
-
             <div className="px-3 mb-3">
               <h3 className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
                 Platform (Super Admin)
@@ -179,17 +176,28 @@ export function AppSidebar() {
             </div>
             {renderNavItems(platformNavigation)}
           </>
+        ) : (
+          <>
+            {renderNavItems(organizationNavigation)}
+            <div className="my-6 border-t border-neutral-100" />
+            <div className="px-3 mb-3">
+              <h3 className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
+                Administration
+              </h3>
+            </div>
+            {renderNavItems(adminNavigation)}
+          </>
         )}
       </div>
 
       <div className="p-4 border-t border-neutral-200/60">
         <div className="flex items-center space-x-3 hover:bg-neutral-50 p-2 rounded-md transition-colors cursor-pointer group">
           <div className="w-10 h-10 bg-neutral-900 text-white flex items-center justify-center rounded-full text-sm font-medium">
-            AA
+            {initials || 'U'}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-medium text-neutral-900 leading-tight group-hover:text-black transition-colors">Ahmed Ali</span>
-            <span className="text-[12px] text-neutral-500">Organization Owner</span>
+            <span className="text-sm font-medium text-neutral-900 leading-tight group-hover:text-black transition-colors">{displayName}</span>
+            <span className="text-[12px] text-neutral-500">{displayRole}</span>
           </div>
         </div>
       </div>
