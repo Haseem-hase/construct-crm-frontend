@@ -146,10 +146,13 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         if (refreshGeneration === authSessionGeneration) {
           onRefreshFailed(refreshError);
-          clearTokens();
-          notifySessionExpired();
+          const refreshWasRejected = axios.isAxiosError(refreshError) && refreshError.response?.status === 401;
+          if (refreshWasRejected) {
+            clearTokens();
+            notifySessionExpired();
+          }
         }
-        return Promise.reject(error);
+        return Promise.reject(refreshError);
       } finally {
         if (activeRefreshGeneration === refreshGeneration) {
           isRefreshing = false;

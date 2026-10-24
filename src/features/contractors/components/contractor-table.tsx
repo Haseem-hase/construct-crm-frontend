@@ -14,6 +14,7 @@ interface ContractorTableProps {
   totalPages: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
+  readOnly?: boolean;
 }
 
 function formatDate(isoString?: string | null) {
@@ -50,8 +51,10 @@ export function ContractorTable({
   totalPages,
   itemsPerPage,
   onPageChange,
+  readOnly = false,
 }: ContractorTableProps) {
   const router = useRouter();
+  const hasOrganizationColumn = contractors.some((contractor) => contractor.organization?.name);
 
   if (contractors.length === 0) {
     return (
@@ -71,6 +74,7 @@ export function ContractorTable({
               <TableHead className="w-[60px] text-center">S.No</TableHead>
               <TableHead className="min-w-[120px]">Code</TableHead>
               <TableHead className="min-w-[200px]">Contractor Name</TableHead>
+              {hasOrganizationColumn && <TableHead>Organization</TableHead>}
               <TableHead className="min-w-[140px]">Phone</TableHead>
               <TableHead className="min-w-[160px]">Email</TableHead>
               <TableHead className="min-w-[120px]">City</TableHead>
@@ -111,6 +115,7 @@ export function ContractorTable({
                       </div>
                     </div>
                   </TableCell>
+                  {hasOrganizationColumn && <TableCell className="text-neutral-600">{contractor.organization?.name || '—'}</TableCell>}
                   <TableCell>
                     <span className="text-neutral-600 tabular-nums">{contractor.phone}</span>
                   </TableCell>
@@ -151,14 +156,14 @@ export function ContractorTable({
                       >
                         View
                       </Button>
-                      <Button
+                      {!readOnly && <Button
                         variant="ghost"
                         size="sm"
                         className="w-16"
                         onClick={() => router.push(`/contractors/${contractor.id}/edit`)}
                       >
                         Edit
-                      </Button>
+                      </Button>}
                     </div>
                   </TableCell>
                 </TableRow>

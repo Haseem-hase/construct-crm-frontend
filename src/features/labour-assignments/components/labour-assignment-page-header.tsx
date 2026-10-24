@@ -5,18 +5,18 @@ import { Button } from '@/src/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/src/components/ui/page-header';
 
-export function LabourAssignmentPageHeader() {
+export function LabourAssignmentPageHeader({ readOnly = false }: { readOnly?: boolean }) {
   const router = useRouter();
 
   return (
     <PageHeader 
       title="Labour Assignments"
       description="Manage labour assignments across contractor projects."
-      action={
+      action={!readOnly && (
         <Button onClick={() => router.push('/labour-assignments/create')} variant="primary">
           + Assign Labour
         </Button>
-      }
+      )}
     />
   );
 }

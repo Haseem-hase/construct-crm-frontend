@@ -4,6 +4,7 @@ export type CustomerStatus = 'Active' | 'Inactive';
 export interface Customer {
   id: string;
   organizationId?: string;
+  organization?: { id: string; name: string };
   customerCode: string;
   name: string;
   type: CustomerType;

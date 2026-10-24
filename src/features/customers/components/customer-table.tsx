@@ -23,6 +23,7 @@ interface CustomerTableProps {
   onUpdateStatus: (id: string, status: CustomerStatus) => Promise<void> | void;
   currentPage?: number;
   itemsPerPage?: number;
+  readOnly?: boolean;
 }
 
 function formatDate(isoString: string) {
@@ -38,7 +39,7 @@ function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
-export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdateStatus, currentPage = 1, itemsPerPage = 10 }: CustomerTableProps) {
+export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdateStatus, currentPage = 1, itemsPerPage = 10, readOnly = false }: CustomerTableProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [targetCustomer, setTargetCustomer] = React.useState<Customer | null>(null);
@@ -50,6 +51,7 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
   const deleteStatus = useAppSelector(selectDeleteCustomerStatus);
   const deleteError = useAppSelector(selectDeleteCustomerError);
   const isDeleting = deleteStatus === 'loading';
+  const hasOrganizationColumn = customers.some((customer) => customer.organization?.name);
 
   React.useEffect(() => {
     return () => {
@@ -111,6 +113,7 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
           <TableRow>
             <TableHead className="w-[60px] text-center">S.No</TableHead>
             <TableHead>Customer</TableHead>
+            {hasOrganizationColumn && <TableHead>Organization</TableHead>}
             <TableHead>Code</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Location</TableHead>
@@ -143,6 +146,7 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
                     )}
                   </div>
                 </TableCell>
+                {hasOrganizationColumn && <TableCell className="text-neutral-600">{customer.organization?.name || '—'}</TableCell>}
                 <TableCell>
                   <span className="text-neutral-600 font-mono text-[13px]">{customer.customerCode}</span>
                 </TableCell>
@@ -170,6 +174,7 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
                     >
                       View
                     </Button>
+                    {!readOnly && <>
                     <Button 
                       variant="ghost" 
                       size="sm" 
@@ -199,6 +204,7 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
                     >
                       Delete
                     </Button>
+                    </>}
                   </div>
                 </TableCell>
               </TableRow>

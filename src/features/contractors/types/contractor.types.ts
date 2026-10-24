@@ -6,6 +6,7 @@ export type ApiContractorStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'INACTIVE
 export interface ApiContractor {
   id: string;
   organizationId: string;
+  organization?: { id: string; name: string };
   contractorCode: string;
   fullName: string;
   profileImageUrl?: string | null;

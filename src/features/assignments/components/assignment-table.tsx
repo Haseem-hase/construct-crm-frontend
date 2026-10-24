@@ -10,9 +10,11 @@ interface AssignmentTableProps {
   assignments: Assignment[];
   currentPage: number;
   itemsPerPage: number;
+  readOnly?: boolean;
 }
 
-export function AssignmentTable({ assignments, currentPage, itemsPerPage }: AssignmentTableProps) {
+export function AssignmentTable({ assignments, currentPage, itemsPerPage, readOnly = false }: AssignmentTableProps) {
+  const hasOrganizationColumn = assignments.some((assignment) => assignment.organizationName);
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return <span className="text-neutral-400">Not provided</span>;
     return new Date(dateStr).toLocaleDateString('en-GB', {
@@ -62,6 +64,7 @@ export function AssignmentTable({ assignments, currentPage, itemsPerPage }: Assi
           <TableRow>
             <TableHead className="w-[60px]">S.No</TableHead>
             <TableHead>Project</TableHead>
+            {hasOrganizationColumn && <TableHead>Organization</TableHead>}
             <TableHead>Contractor</TableHead>
             <TableHead>Responsibilities</TableHead>
             <TableHead>Start Date</TableHead>
@@ -84,6 +87,7 @@ export function AssignmentTable({ assignments, currentPage, itemsPerPage }: Assi
                     <span className="text-xs text-neutral-500">{assignment.projectCode}</span>
                   </div>
                 </TableCell>
+                {hasOrganizationColumn && <TableCell className="text-neutral-600">{assignment.organizationName || '—'}</TableCell>}
                 
                 <TableCell>
                   <div className="flex flex-col">
@@ -119,11 +123,11 @@ export function AssignmentTable({ assignments, currentPage, itemsPerPage }: Assi
                         View
                       </Button>
                     </Link>
-                    <Link href={`/assignments/${assignment.id}/edit`}>
+                    {!readOnly && <Link href={`/assignments/${assignment.id}/edit`}>
                       <Button variant="ghost" size="sm" className="w-16">
                         Edit
                       </Button>
-                    </Link>
+                    </Link>}
                   </div>
                 </TableCell>
               </TableRow>

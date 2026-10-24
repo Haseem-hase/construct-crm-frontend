@@ -5,6 +5,7 @@ export type ApiProjectStatus = 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' |
 export type ApiProjectCustomer = { id: string; customerId: string; relationshipType: 'OWNER' | 'CLIENT' | 'DEVELOPER' | 'INVESTOR' | 'PARTNER' | 'OTHER'; isPrimary: boolean; customer?: { id: string; name: string; customerCode: string; type: string; country?: string | null; city?: string | null } };
 export type ApiProject = {
   id: string; projectCode: string; name: string; description: string | null; status: ApiProjectStatus;
+  organization?: { id: string; name: string };
   country: string; city: string | null; address: string | null; plannedStartDate: string | null; plannedEndDate: string | null;
   actualStartDate: string | null; actualEndDate: string | null; progress: number; budget: number | null; imageUrl: string | null;
   createdAt: string; projectCustomers?: ApiProjectCustomer[];

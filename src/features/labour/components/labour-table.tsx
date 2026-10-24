@@ -13,6 +13,7 @@ interface LabourTableProps {
   totalPages: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
+  readOnly?: boolean;
 }
 
 function formatDate(isoString?: string) {
@@ -38,9 +39,11 @@ export function LabourTable({
   currentPage, 
   totalPages, 
   itemsPerPage,
-  onPageChange 
+  onPageChange,
+  readOnly = false,
 }: LabourTableProps) {
   const router = useRouter();
+  const hasOrganizationColumn = labourData.some((labour) => labour.organizationName);
 
   if (labourData.length === 0) {
     return (
@@ -59,6 +62,7 @@ export function LabourTable({
             <TableRow>
               <TableHead className="w-[60px] text-center">S.No</TableHead>
               <TableHead className="min-w-[250px]">Labour</TableHead>
+              {hasOrganizationColumn && <TableHead>Organization</TableHead>}
               <TableHead className="min-w-[150px]">Profession</TableHead>
               <TableHead className="min-w-[140px]">Phone</TableHead>
               <TableHead className="min-w-[120px]">City</TableHead>
@@ -102,6 +106,7 @@ export function LabourTable({
                       </div>
                     </div>
                   </TableCell>
+                  {hasOrganizationColumn && <TableCell className="text-neutral-600">{labour.organizationName || '—'}</TableCell>}
                   <TableCell>
                     <span className="text-neutral-700">{labour.professionName}</span>
                   </TableCell>
@@ -129,14 +134,14 @@ export function LabourTable({
                       >
                         View
                       </Button>
-                      <Button 
+                      {!readOnly && <Button
                         variant="ghost" 
                         size="sm" 
                         className="w-16"
                         onClick={() => router.push(`/labour/${labour.id}/edit`)}
                       >
                         Edit
-                      </Button>
+                      </Button>}
                     </div>
                   </TableCell>
                 </TableRow>

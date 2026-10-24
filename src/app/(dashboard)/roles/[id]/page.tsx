@@ -1,11 +1,15 @@
 'use client';
 
-import React, { use, useEffect } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { RoleDetailsClient } from '@/src/features/roles/components/role-details-client';
 import { EmptyState } from '@/src/components/ui/empty-state';
 import { Button } from '@/src/components/ui/button';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
+import { useAuth } from '@/src/features/auth/context/use-auth';
+import { rolesApi } from '@/src/features/roles/api/roles.api';
+import { BaseRole } from '@/src/features/roles/types/roles.types';
+import { PageHeader } from '@/src/components/ui/page-header';
 import { 
   fetchRoleById, 
   clearSelectedRole, 
@@ -20,7 +24,7 @@ interface PageProps {
   }>;
 }
 
-export default function RoleDetailsPage({ params }: PageProps) {
+function OrganizationRoleDetailsPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const id = resolvedParams.id;
   
@@ -86,4 +90,39 @@ export default function RoleDetailsPage({ params }: PageProps) {
   }
 
   return <RoleDetailsClient role={role} />;
+}
+
+function GlobalRoleDetailsPage({ params }: PageProps) {
+  const { id } = use(params);
+  const [role, setRole] = useState<BaseRole | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const loadRole = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await rolesApi.getGlobalRole(id);
+      setRole(response.data.role);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Unable to load global role.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void loadRole(); }, [id]);
+
+  if (loading) return <p className="py-12 text-center text-sm text-neutral-500">Loading role details…</p>;
+  if (error) return <div role="alert" className="mx-auto max-w-4xl rounded-lg border border-red-200 bg-red-50 p-6 text-center text-red-700"><p className="mb-4">{error}</p><Button variant="outline" onClick={() => void loadRole()}>Retry</Button></div>;
+  if (!role) return <EmptyState title="Role Not Found" description="This global role does not exist or has been removed." action={<Link href="/roles"><Button variant="outline">Back to Roles</Button></Link>} />;
+
+  return <div className="mx-auto max-w-4xl pb-12"><PageHeader title={role.name} description={role.description || 'Global role'} backLink={{ href: '/roles', label: 'Back to Roles' }} /><div className="rounded-lg border border-neutral-200 bg-white p-6"><h2 className="text-sm font-semibold text-neutral-900">Global role</h2><p className="mt-2 text-sm text-neutral-600">This role is shared across organizations. Permission assignments are stored on each organization’s role instance and are not represented by a single platform-wide permission set.</p></div></div>;
+}
+
+export default function RoleDetailsPage({ params }: PageProps) {
+  const { user } = useAuth();
+  return user?.systemRole === 'SUPER_ADMIN'
+    ? <GlobalRoleDetailsPage params={params} />
+    : <OrganizationRoleDetailsPage params={params} />;
 }

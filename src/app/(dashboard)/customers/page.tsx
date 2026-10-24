@@ -10,10 +10,13 @@ import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { fetchCustomers, updateCustomer, selectCustomers, selectCustomersListStatus, selectCustomersListError } from '@/src/features/customers/store/customersSlice';
 import { Button } from '@/src/components/ui/button';
 import { SuccessAlert } from '@/src/components/ui/success-alert';
+import { useAuth } from '@/src/features/auth/context/use-auth';
 
 const ITEMS_PER_PAGE = 10;
 
 export default function CustomersPage() {
+  const { user } = useAuth();
+  const readOnly = user?.systemRole === 'SUPER_ADMIN';
   const dispatch = useAppDispatch();
   const customers = useAppSelector(selectCustomers);
   const status = useAppSelector(selectCustomersListStatus);
@@ -130,7 +133,7 @@ export default function CustomersPage() {
 
   return (
     <div className="w-full mx-auto pb-12 min-w-0">
-      <CustomerPageHeader />
+      <CustomerPageHeader readOnly={readOnly} />
 
       <SuccessAlert 
         show={showSuccessAlert} 
@@ -196,6 +199,7 @@ export default function CustomersPage() {
             onUpdateStatus={handleUpdateStatus}
             currentPage={validCurrentPage}
             itemsPerPage={ITEMS_PER_PAGE}
+        readOnly={readOnly}
           />
 
           {/* Pagination UI */}

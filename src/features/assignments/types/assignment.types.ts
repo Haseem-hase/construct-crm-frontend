@@ -11,6 +11,7 @@ export interface Assignment {
   projectId: string;
   projectCode: string;
   projectName: string;
+  organizationName?: string;
   contractorId: string;
   contractorCode: string;
   contractorName: string;

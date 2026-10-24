@@ -19,11 +19,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logoutRequestRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
     const initializeAuth = async () => {
       let accessToken = getAccessToken();
       const refreshToken = getRefreshToken();
 
       if (!accessToken && !refreshToken) {
+        if (cancelled) return;
         setUser(null);
         setIsAuthenticated(false);
         setIsLoading(false);
@@ -42,29 +46,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         const response = await authApi.getMe();
         if (response.success && response.data?.user) {
+          if (cancelled) return;
           setUser(response.data.user);
           setIsAuthenticated(true);
+          setIsLoading(false);
         } else {
           clearTokens();
+          if (cancelled) return;
           setUser(null);
           setIsAuthenticated(false);
+          setIsLoading(false);
         }
       } catch (error) {
-        // Preserve tokens when the API is temporarily unavailable. The next
-        // visit can retry validation without signing out a valid user.
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
+        const isInvalidSession = axios.isAxiosError(error) && error.response?.status === 401;
+        if (isInvalidSession) {
           clearTokens();
-        } else if (!axios.isAxiosError(error)) {
-          clearTokens();
+          if (!cancelled) {
+            setUser(null);
+            setIsAuthenticated(false);
+            setIsLoading(false);
+          }
+          return;
         }
-        setUser(null);
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
+
+        // A network or server failure does not prove that the stored session
+        // is invalid. Keep protected routes in their existing loading state
+        // and retry restoration without sending the user to /login.
+        if (!cancelled) retryTimer = setTimeout(() => void initializeAuth(), 5000);
       }
     };
 
     initializeAuth();
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
   }, []);
 
   const login = async (credentials: LoginRequest): Promise<MeUser> => {
