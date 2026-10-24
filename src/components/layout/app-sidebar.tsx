@@ -16,8 +16,7 @@ type NavItem = {
   subItems?: { name: string; href: string }[];
 };
 
-const organizationNavigation: NavItem[] = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+const sharedNavigation: NavItem[] = [
   { name: 'Customers', href: '/customers', icon: Users },
   { name: 'Projects', href: '/projects', icon: FolderOpen },
   { name: 'Contractors', href: '/contractors', icon: Hammer },
@@ -32,14 +31,9 @@ const organizationNavigation: NavItem[] = [
   },
 ];
 
-const adminNavigation: NavItem[] = [
+const otherNavigation: NavItem[] = [
   { name: 'Roles & Permissions', href: '/roles', icon: Shield },
   { name: 'Settings', href: '/settings', icon: Settings },
-];
-
-const platformNavigation: NavItem[] = [
-  { name: 'Platform Dashboard', href: '/super-admin/dashboard', icon: LayoutDashboard },
-  { name: 'Organizations', href: '/super-admin/organizations', icon: FolderOpen },
 ];
 
 export function AppSidebar() {
@@ -57,7 +51,18 @@ export function AppSidebar() {
     .map((part) => part[0])
     .join('')
     .toUpperCase();
-  const primaryNavigation = isSuperAdmin ? platformNavigation : organizationNavigation;
+  const navigation: NavItem[] = [
+    {
+      name: isSuperAdmin ? 'Platform Dashboard' : 'Dashboard',
+      href: isSuperAdmin ? '/super-admin/dashboard' : '/dashboard',
+      icon: LayoutDashboard,
+    },
+    ...(isSuperAdmin
+      ? [{ name: 'Organizations', href: '/super-admin/organizations', icon: FolderOpen }]
+      : []),
+    ...sharedNavigation,
+    ...otherNavigation,
+  ];
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [lastPathname, setLastPathname] = useState<string | null>(null);
 
@@ -66,16 +71,14 @@ export function AppSidebar() {
     const newExpanded = { ...expandedItems };
     let changed = false;
     
-    [primaryNavigation, ...(!isSuperAdmin ? [adminNavigation] : [])].forEach(nav => {
-      nav.forEach(item => {
-        if (item.subItems) {
-          const hasActiveSub = item.subItems.some(sub => pathname?.startsWith(sub.href));
-          if (hasActiveSub && !newExpanded[item.name]) {
-            newExpanded[item.name] = true;
-            changed = true;
-          }
+    navigation.forEach(item => {
+      if (item.subItems) {
+        const hasActiveSub = item.subItems.some(sub => pathname?.startsWith(sub.href));
+        if (hasActiveSub && !newExpanded[item.name]) {
+          newExpanded[item.name] = true;
+          changed = true;
         }
-      });
+      }
     });
 
     if (changed) {
@@ -167,37 +170,24 @@ export function AppSidebar() {
       </div>
 
       <div className="flex-1 px-3 py-4 overflow-y-auto">
-        {isSuperAdmin ? (
-          <>
-            <div className="px-3 mb-3">
-              <h3 className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
-                Platform (Super Admin)
-              </h3>
-            </div>
-            {renderNavItems(platformNavigation)}
-          </>
-        ) : (
-          <>
-            {renderNavItems(organizationNavigation)}
-            <div className="my-6 border-t border-neutral-100" />
-            <div className="px-3 mb-3">
-              <h3 className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
-                Administration
-              </h3>
-            </div>
-            {renderNavItems(adminNavigation)}
-          </>
-        )}
+        {renderNavItems(navigation.slice(0, navigation.length - otherNavigation.length))}
+        <div className="my-5 border-t border-neutral-100" />
+        <div className="px-3 mb-2">
+          <h3 className="text-[11px] font-semibold tracking-[0.12em] text-neutral-400 uppercase">
+            Other
+          </h3>
+        </div>
+        {renderNavItems(otherNavigation)}
       </div>
 
-      <div className="p-4 border-t border-neutral-200/60">
-        <div className="flex items-center space-x-3 hover:bg-neutral-50 p-2 rounded-md transition-colors cursor-pointer group">
-          <div className="w-10 h-10 bg-neutral-900 text-white flex items-center justify-center rounded-full text-sm font-medium">
+      <div className="px-3 py-3 border-t border-neutral-200/60">
+        <div className="flex items-center gap-3 rounded-lg border border-neutral-200/70 bg-neutral-50/70 px-3 py-3">
+          <div className="w-9 h-9 shrink-0 bg-neutral-900 text-white flex items-center justify-center rounded-full text-xs font-semibold tracking-wide">
             {initials || 'U'}
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-neutral-900 leading-tight group-hover:text-black transition-colors">{displayName}</span>
-            <span className="text-[12px] text-neutral-500">{displayRole}</span>
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-[13px] font-semibold text-neutral-900 leading-tight" title={displayName}>{displayName}</span>
+            <span className="truncate mt-1 text-[11px] font-medium text-neutral-500" title={displayRole}>{displayRole}</span>
           </div>
         </div>
       </div>
