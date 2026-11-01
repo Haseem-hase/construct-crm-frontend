@@ -7,6 +7,7 @@ import { getAccessToken, getRefreshToken, setTokens, clearTokens } from '../../.
 import { MeUser, LoginRequest } from '../types/auth';
 import axios from 'axios';
 import { invalidatePendingAuthRefreshes } from '../../../lib/api/client';
+import { clearSelectedInventoryOrganization } from '../../inventory/utils/inventory-organization';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -48,6 +49,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (response.success && response.data?.user) {
           if (cancelled) return;
           setUser(response.data.user);
+          if (response.data.user.systemRole !== 'SUPER_ADMIN') clearSelectedInventoryOrganization();
           setIsAuthenticated(true);
           setIsLoading(false);
         } else {
@@ -100,6 +102,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Authorization decisions use the authenticated /auth/me payload,
         // whose systemRole is nullable for organization users.
         setUser(meResponse.data.user);
+        if (meResponse.data.user.systemRole !== 'SUPER_ADMIN') clearSelectedInventoryOrganization();
         setIsAuthenticated(true);
         return meResponse.data.user;
       } else {
@@ -113,6 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     const handleSessionExpired = () => {
+      clearSelectedInventoryOrganization();
       setUser(null);
       setIsAuthenticated(false);
       setIsLoading(false);
@@ -126,6 +130,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const refreshToken = getRefreshToken();
     invalidatePendingAuthRefreshes();
+    clearSelectedInventoryOrganization();
     clearTokens();
     setUser(null);
     setIsAuthenticated(false);

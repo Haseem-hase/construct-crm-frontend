@@ -29,6 +29,7 @@ const sharedNavigation: NavItem[] = [
       { name: 'Labour Assignments', href: '/labour-assignments' }
     ]
   },
+  { name: 'Inventory', href: '/inventory', icon: ClipboardList },
 ];
 
 const otherNavigation: NavItem[] = [
@@ -123,7 +124,9 @@ export function AppSidebar() {
                 {isExpanded && (
                   <ul className="mt-1 space-y-1 px-3">
                     {item.subItems!.map((sub) => {
-                      const isSubActive = pathname?.startsWith(sub.href) || false;
+                      const isSubActive = sub.href === '/inventory'
+                        ? pathname === sub.href
+                        : pathname?.startsWith(sub.href) || false;
                       return (
                         <li key={sub.name}>
                           <Link

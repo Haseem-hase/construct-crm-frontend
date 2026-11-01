@@ -55,6 +55,11 @@ apiClient.interceptors.request.use(
     if (accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
+    if (typeof window !== 'undefined' && config.url?.includes('/inventory')) {
+      const organizationId = window.localStorage.getItem('constructcrm:inventory-organization-id');
+      if (organizationId && config.headers) config.headers['x-organization-id'] = organizationId;
+      else if (config.headers) delete config.headers['x-organization-id'];
+    }
     return config;
   },
   (error) => {
