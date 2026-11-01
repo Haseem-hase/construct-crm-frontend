@@ -16,9 +16,10 @@ import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
 import { InventoryAsset, InventoryAssetType } from '@/src/features/inventory/types/inventory.types';
 import { inventoryApi } from '@/src/features/inventory/api/inventory.api';
 import { InventoryError, InventoryLoading } from '@/src/features/inventory/components/inventory-ui';
+import { inventoryImageUrl } from '@/src/features/inventory/utils/inventory-image';
 
-type AssetForm = { type: InventoryAssetType; code: string; name: string; quantity: string; price: string; description: string; imageUrl: string };
-const blankForm = (): AssetForm => ({ type: 'MATERIAL', code: '', name: '', quantity: '0', price: '0', description: '', imageUrl: '' });
+type AssetForm = { type: InventoryAssetType; code: string; name: string; quantity: string; price: string; description: string };
+const blankForm = (): AssetForm => ({ type: 'MATERIAL', code: '', name: '', quantity: '0', price: '0', description: '' });
 const typeLabels: Record<InventoryAssetType, string> = { MATERIAL: 'Materials', TOOL: 'Tools', MACHINERY: 'Machinery' };
 const errorMessage = (e: unknown) => (e as { response?: { data?: { message?: string; errors?: Array<{ message?: string }> } } })?.response?.data?.message || (e as { response?: { data?: { errors?: Array<{ message?: string }> } } })?.response?.data?.errors?.[0]?.message || 'Unable to complete this inventory request.';
 const money = (value: string | number) => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'SAR', maximumFractionDigits: 2 }).format(Number(value));
@@ -36,6 +37,8 @@ export default function SimpleInventoryPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<InventoryAsset | null>(null);
   const [form, setForm] = useState<AssetForm>(blankForm());
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<InventoryAsset | null>(null);
 
   const load = useCallback(async () => {
@@ -46,12 +49,15 @@ export default function SimpleInventoryPage() {
     } catch (e) { setError(errorMessage(e)); } finally { setLoading(false); }
   }, [page, filter, search]);
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => () => {
+    if (imagePreview?.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
+  }, [imagePreview]);
 
-  const openCreate = () => { setEditing(null); setForm(blankForm()); setError(''); setDialogOpen(true); };
-  const openEdit = (asset: InventoryAsset) => { setEditing(asset); setForm({ type: asset.type, code: asset.code, name: asset.name, quantity: String(asset.quantity), price: String(asset.price), description: asset.description || '', imageUrl: asset.imageUrl || '' }); setError(''); setDialogOpen(true); };
+  const openCreate = () => { setEditing(null); setForm(blankForm()); setImageFile(null); setImagePreview(null); setError(''); setDialogOpen(true); };
+  const openEdit = (asset: InventoryAsset) => { setEditing(asset); setForm({ type: asset.type, code: asset.code, name: asset.name, quantity: String(asset.quantity), price: String(asset.price), description: asset.description || '' }); setImageFile(null); setImagePreview(inventoryImageUrl(asset.imageUrl)); setError(''); setDialogOpen(true); };
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setSaving(true); setError('');
-    const payload = { ...form, code: form.code.trim(), name: form.name.trim(), description: form.description.trim() || null, imageUrl: form.imageUrl.trim() || null };
+    const payload = { ...form, code: form.code.trim(), name: form.name.trim(), description: form.description.trim() || null, ...(imageFile ? { image: imageFile } : {}) };
     try { if (editing) await inventoryApi.updateAsset(editing.id, payload); else await inventoryApi.createAsset(payload); setDialogOpen(false); await load(); }
     catch (e) { setError(errorMessage(e)); } finally { setSaving(false); }
   };
@@ -71,7 +77,7 @@ export default function SimpleInventoryPage() {
       {loading && !rows.length ? <div className="p-5"><InventoryLoading label="Loading your inventory…" /></div> : rows.length ? <>
         <Table><TableHeader><TableRow><TableHead>Item</TableHead><TableHead>Type</TableHead><TableHead className="text-right">Count</TableHead><TableHead className="text-right">{filter === 'MATERIAL' ? 'Price per unit' : filter === 'ALL' ? 'Price' : 'Rent price'}</TableHead><TableHead>Description</TableHead><TableHead><span className="sr-only">Actions</span></TableHead></TableRow></TableHeader><TableBody>
           {rows.map(asset => <TableRow key={asset.id}>
-            <TableCell><div className="flex min-w-48 items-center gap-3">{asset.imageUrl ? <img src={asset.imageUrl} alt="" className="h-11 w-11 rounded-lg border border-neutral-200 object-cover" /> : <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-neutral-100 text-xs font-semibold text-neutral-400">{asset.name.slice(0, 1).toUpperCase()}</div>}<div className="min-w-0"><p className="truncate font-medium text-neutral-900">{asset.name}</p><p className="font-mono text-[11px] text-neutral-400">{asset.code}</p></div></div></TableCell>
+            <TableCell><div className="flex min-w-48 items-center gap-3">{inventoryImageUrl(asset.imageUrl) ? <img src={inventoryImageUrl(asset.imageUrl)!} alt={`${asset.name}`} className="h-11 w-11 rounded-lg border border-neutral-200 object-cover" /> : <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-neutral-100 text-xs font-semibold text-neutral-400">{asset.name.slice(0, 1).toUpperCase()}</div>}<div className="min-w-0"><p className="truncate font-medium text-neutral-900">{asset.name}</p><p className="font-mono text-[11px] text-neutral-400">{asset.code}</p></div></div></TableCell>
             <TableCell><Badge variant={asset.type === 'MATERIAL' ? 'info' : asset.type === 'TOOL' ? 'neutral' : 'warning'}>{typeLabels[asset.type]}</Badge></TableCell>
             <TableCell className="text-right font-mono">{Number(asset.quantity).toLocaleString()}</TableCell>
             <TableCell className="text-right font-medium">{money(asset.price)}</TableCell>
@@ -91,9 +97,13 @@ export default function SimpleInventoryPage() {
           <FormField label="Name" required><Input required maxLength={180} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Portland cement" /></FormField>
           <FormField label="Count" required><Input required type="number" min="0" step="0.0001" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} /></FormField>
           <FormField label={form.type === 'MATERIAL' ? 'Price per unit (SAR)' : 'Rent price (SAR)'} required><Input required type="number" min="0" step="0.0001" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} /></FormField>
-          <FormField label="Image URL" helperText="Paste a link to an image hosted online."><Input type="url" maxLength={2048} value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://…" /></FormField>
         </div>
-        {form.imageUrl && <img src={form.imageUrl} alt="Inventory item preview" className="h-36 w-36 rounded-xl border border-neutral-200 object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />}
+        <FormField label="Item photo" helperText="JPEG, PNG, or WebP · up to 5 MB. A square image works best.">
+          <div className="flex flex-col gap-4 rounded-xl border border-dashed border-neutral-300 bg-neutral-50/70 p-4 sm:flex-row sm:items-center">
+            {imagePreview ? <img src={imagePreview} alt="Inventory item preview" className="h-24 w-24 shrink-0 rounded-lg border border-neutral-200 bg-white object-cover" /> : <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>}
+            <div className="min-w-0 flex-1"><p className="text-sm font-medium text-neutral-800">{imageFile ? imageFile.name : imagePreview ? 'Current item photo' : 'Add a clear photo'}</p><p className="mt-1 text-xs leading-5 text-neutral-500">Show the material, tool, or machine so your team can identify it at a glance.</p><label className="mt-3 inline-flex cursor-pointer items-center rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 shadow-sm transition hover:border-neutral-300 hover:bg-neutral-50">{imagePreview ? 'Choose another photo' : 'Choose photo'}<input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={event => { const file = event.target.files?.[0]; if (!file) return; if (file.size > 5 * 1024 * 1024) { setError('Choose an image smaller than 5 MB.'); event.currentTarget.value = ''; return; } setError(''); setImageFile(file); setImagePreview(URL.createObjectURL(file)); }} /></label></div>
+          </div>
+        </FormField>
         <FormField label="Description"><Textarea maxLength={2000} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Add useful specifications or notes" /></FormField>
         <div className="flex flex-col-reverse gap-3 border-t border-neutral-100 pt-4 sm:flex-row sm:justify-end"><Button type="button" variant="outline" disabled={saving} onClick={() => setDialogOpen(false)}>Cancel</Button><Button type="submit" isLoading={saving}>{editing ? 'Save changes' : 'Add to inventory'}</Button></div>
       </form>
