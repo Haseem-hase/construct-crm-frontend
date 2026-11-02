@@ -25,6 +25,9 @@ const assetPayload = (payload: InventoryAssetInput) => {
 };
 
 export const inventoryApi = {
+  async asset(id: string) {
+    return (await apiClient.get<ApiEnvelope<{ asset: InventoryAsset }>>(`/inventory/assets/${id}`)).data.data.asset;
+  },
   async assets(params: { page: number; pageSize: number; search?: string; type?: InventoryAssetType }) {
     return (await apiClient.get<ApiEnvelope<{ result: InventoryAssetPage }>>('/inventory/assets', { params })).data.data.result;
   },

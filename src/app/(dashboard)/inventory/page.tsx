@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/src/components/ui/page-header';
 import { Card } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
@@ -25,6 +26,7 @@ const errorMessage = (e: unknown) => (e as { response?: { data?: { message?: str
 const money = (value: string | number) => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'SAR', maximumFractionDigits: 2 }).format(Number(value));
 
 export default function SimpleInventoryPage() {
+  const router = useRouter();
   const [rows, setRows] = useState<InventoryAsset[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -82,7 +84,7 @@ export default function SimpleInventoryPage() {
             <TableCell className="text-right font-mono">{Number(asset.quantity).toLocaleString()}</TableCell>
             <TableCell className="text-right font-medium">{money(asset.price)}</TableCell>
             <TableCell className="max-w-64 truncate text-neutral-500">{asset.description || '—'}</TableCell>
-            <TableCell><div className="flex justify-end gap-1"><Button size="sm" variant="ghost" onClick={() => openEdit(asset)}>Edit</Button><Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" onClick={() => setDeleteTarget(asset)}>Remove</Button></div></TableCell>
+            <TableCell><div className="flex justify-end gap-1"><Button size="sm" variant="ghost" onClick={() => router.push(`/inventory/${asset.id}`)}>View</Button><Button size="sm" variant="ghost" onClick={() => openEdit(asset)}>Edit</Button><Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" onClick={() => setDeleteTarget(asset)}>Remove</Button></div></TableCell>
           </TableRow>)}
         </TableBody></Table><div className="border-t border-neutral-100 p-4"><Pagination currentPage={page} totalPages={totalPages} totalItems={total} itemsPerPage={12} onPageChange={setPage} /></div>
       </> : <div className="px-6 py-16 text-center"><p className="font-medium text-neutral-900">{search || filter !== 'ALL' ? 'No matching inventory' : 'Your inventory is empty'}</p><p className="mt-1 text-sm text-neutral-500">Add materials, tools, or machinery owned by your company.</p><Button className="mt-4" size="sm" onClick={openCreate}>Add first item</Button></div>}
