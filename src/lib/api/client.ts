@@ -51,9 +51,18 @@ export function invalidatePendingAuthRefreshes() {
 apiClient.interceptors.request.use(
   (config: CustomAxiosRequestConfig) => {
     config._authGeneration = authSessionGeneration;
+    if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+      // Let the browser add the multipart boundary required by Multer.
+      config.headers?.delete('Content-Type');
+    }
     const accessToken = getAccessToken();
     if (accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    if (typeof window !== 'undefined' && config.url?.includes('/inventory')) {
+      const organizationId = window.localStorage.getItem('constructcrm:inventory-organization-id');
+      if (organizationId && config.headers) config.headers['x-organization-id'] = organizationId;
+      else if (config.headers) delete config.headers['x-organization-id'];
     }
     return config;
   },
@@ -146,10 +155,13 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         if (refreshGeneration === authSessionGeneration) {
           onRefreshFailed(refreshError);
-          clearTokens();
-          notifySessionExpired();
+          const refreshWasRejected = axios.isAxiosError(refreshError) && refreshError.response?.status === 401;
+          if (refreshWasRejected) {
+            clearTokens();
+            notifySessionExpired();
+          }
         }
-        return Promise.reject(error);
+        return Promise.reject(refreshError);
       } finally {
         if (activeRefreshGeneration === refreshGeneration) {
           isRefreshing = false;

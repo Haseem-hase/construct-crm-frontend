@@ -5,18 +5,18 @@ import { Button } from '@/src/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/src/components/ui/page-header';
 
-export function CustomerPageHeader() {
+export function CustomerPageHeader({ readOnly = false }: { readOnly?: boolean }) {
   const router = useRouter();
 
   return (
     <PageHeader 
       title="Customers"
       description="Manage your organization's customers."
-      action={
+      action={!readOnly && (
         <Button onClick={() => router.push('/customers/create')} variant="primary">
           + Add Customer
         </Button>
-      }
+      )}
     />
   );
 }

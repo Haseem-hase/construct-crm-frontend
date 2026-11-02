@@ -8,6 +8,7 @@ import { RoleTypeBadge } from '@/src/features/roles/components/role-type-badge';
 import { Button } from '@/src/components/ui/button';
 import { EmptyState } from '@/src/components/ui/empty-state';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
+import { useAuth } from '@/src/features/auth/context/use-auth';
 import { 
   fetchRoleById, 
   clearSelectedRole, 
@@ -20,6 +21,8 @@ export default function EditRolePage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.systemRole === 'SUPER_ADMIN';
   
   const dispatch = useAppDispatch();
   const orgRole = useAppSelector(selectSelectedRole);
@@ -27,14 +30,18 @@ export default function EditRolePage() {
   const error = useAppSelector(selectRolesDetailError);
 
   useEffect(() => {
-    if (id) {
+    if (id && !isSuperAdmin) {
       dispatch(fetchRoleById(id));
     }
     
     return () => {
       dispatch(clearSelectedRole());
     };
-  }, [dispatch, id]);
+  }, [dispatch, id, isSuperAdmin]);
+
+  if (isSuperAdmin) {
+    return <div className="mx-auto max-w-4xl pb-12"><PageHeader title="Global Role" backLink={{ href: '/roles', label: 'Back to Roles' }} /><div className="rounded-lg border border-neutral-200 bg-white p-6 text-sm text-neutral-600">Global role permission editing is not available here. Permission assignments are stored on individual organization role instances, so this organization-scoped editor is disabled for Super Admins.</div></div>;
+  }
 
   if (!orgRole && (status === 'loading' || status === 'idle')) {
     return (

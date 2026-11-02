@@ -12,6 +12,7 @@ interface ProjectTableProps {
   onClearFilters: () => void;
   currentPage?: number;
   itemsPerPage?: number;
+  readOnly?: boolean;
 }
 
 function formatDate(isoString: string) {
@@ -33,8 +34,9 @@ function getStatusVariant(status: string): 'default' | 'success' | 'warning' | '
   }
 }
 
-export function ProjectTable({ projects, onClearFilters, currentPage = 1, itemsPerPage = 10 }: ProjectTableProps) {
+export function ProjectTable({ projects, onClearFilters, currentPage = 1, itemsPerPage = 10, readOnly = false }: ProjectTableProps) {
   const router = useRouter();
+  const hasOrganizationColumn = projects.some((project) => project.organizationName);
 
   if (projects.length === 0) {
     return (
@@ -56,6 +58,7 @@ export function ProjectTable({ projects, onClearFilters, currentPage = 1, itemsP
             <TableHead className="w-[60px] text-center">S.No</TableHead>
             <TableHead>Code</TableHead>
             <TableHead>Project</TableHead>
+            {hasOrganizationColumn && <TableHead>Organization</TableHead>}
             <TableHead>Customer</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-[120px]">Progress</TableHead>
@@ -79,6 +82,7 @@ export function ProjectTable({ projects, onClearFilters, currentPage = 1, itemsP
                 <TableCell className="max-w-[200px] truncate" title={project.name}>
                   <span className="font-medium text-neutral-900">{project.name}</span>
                 </TableCell>
+                {hasOrganizationColumn && <TableCell className="text-neutral-600">{project.organizationName || '—'}</TableCell>}
                 <TableCell>
                   <span className="text-neutral-600">{project.customerName}</span>
                 </TableCell>
@@ -110,14 +114,14 @@ export function ProjectTable({ projects, onClearFilters, currentPage = 1, itemsP
                     >
                       View
                     </Button>
-                    <Button 
+                    {!readOnly && <Button
                       variant="ghost" 
                       size="sm" 
                       className="w-16"
                       onClick={() => router.push(`/projects/${project.id}/edit`)}
                     >
                       Edit
-                    </Button>
+                    </Button>}
                   </div>
                 </TableCell>
               </TableRow>

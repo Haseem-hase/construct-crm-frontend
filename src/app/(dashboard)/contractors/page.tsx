@@ -12,10 +12,13 @@ import { ContractorPageHeader } from '@/src/features/contractors/components/cont
 import { ContractorFilters } from '@/src/features/contractors/components/contractor-filters';
 import { ContractorTable } from '@/src/features/contractors/components/contractor-table';
 import { Button } from '@/src/components/ui/button';
+import { useAuth } from '@/src/features/auth/context/use-auth';
 
 const ITEMS_PER_PAGE = 10;
 
 export default function ContractorsPage() {
+  const { user } = useAuth();
+  const readOnly = user?.systemRole === 'SUPER_ADMIN';
   const dispatch = useAppDispatch();
   const contractors = useAppSelector(selectContractors);
   const status = useAppSelector(selectContractorsListStatus);
@@ -88,7 +91,7 @@ export default function ContractorsPage() {
 
   return (
     <div className="w-full mx-auto pb-12 min-w-0">
-      <ContractorPageHeader />
+      <ContractorPageHeader readOnly={readOnly} />
 
       <ContractorFilters
         searchQuery={searchQuery}
@@ -153,6 +156,7 @@ export default function ContractorsPage() {
           totalPages={totalPages}
           itemsPerPage={ITEMS_PER_PAGE}
           onPageChange={setCurrentPage}
+          readOnly={readOnly}
         />
       )}
     </div>

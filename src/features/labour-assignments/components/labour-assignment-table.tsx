@@ -10,9 +10,11 @@ interface LabourAssignmentTableProps {
   assignments: LabourAssignment[];
   currentPage: number;
   itemsPerPage: number;
+  readOnly?: boolean;
 }
 
-export function LabourAssignmentTable({ assignments, currentPage, itemsPerPage }: LabourAssignmentTableProps) {
+export function LabourAssignmentTable({ assignments, currentPage, itemsPerPage, readOnly = false }: LabourAssignmentTableProps) {
+  const hasOrganizationColumn = assignments.some((assignment) => assignment.organizationName);
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return <span className="text-neutral-400">Not provided</span>;
     return new Date(dateStr).toLocaleDateString('en-GB', {
@@ -58,6 +60,7 @@ export function LabourAssignmentTable({ assignments, currentPage, itemsPerPage }
             <TableHead>Profession</TableHead>
             <TableHead>Contractor</TableHead>
             <TableHead>Project</TableHead>
+            {hasOrganizationColumn && <TableHead>Organization</TableHead>}
             <TableHead>Start Date</TableHead>
             <TableHead>End Date</TableHead>
             <TableHead>Status</TableHead>
@@ -98,6 +101,7 @@ export function LabourAssignmentTable({ assignments, currentPage, itemsPerPage }
                     <span className="text-xs text-neutral-500">{assignment.projectCode}</span>
                   </div>
                 </TableCell>
+                {hasOrganizationColumn && <TableCell className="text-neutral-600">{assignment.organizationName || '—'}</TableCell>}
 
                 <TableCell className="text-sm whitespace-nowrap">
                   {formatDate(assignment.startDate)}
@@ -120,11 +124,11 @@ export function LabourAssignmentTable({ assignments, currentPage, itemsPerPage }
                         View
                       </Button>
                     </Link>
-                    <Link href={`/labour-assignments/${assignment.id}/edit`}>
+                    {!readOnly && <Link href={`/labour-assignments/${assignment.id}/edit`}>
                       <Button variant="ghost" size="sm" className="w-16">
                         Edit
                       </Button>
-                    </Link>
+                    </Link>}
                   </div>
                 </TableCell>
               </TableRow>

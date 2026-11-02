@@ -15,6 +15,7 @@ export interface Project {
   customerName: string;
   customerCode?: string;
   customerType?: string;
+  organizationName?: string;
   projectCustomerRelationId?: string;
   projectCustomerRelations?: { id: string; customerId: string }[];
   status: ProjectStatus;

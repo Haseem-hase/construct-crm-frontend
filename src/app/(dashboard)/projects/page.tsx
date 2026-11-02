@@ -7,10 +7,13 @@ import { ProjectTable } from '@/src/features/projects/components/project-table';
 import { Project, ProjectStatus } from '@/src/features/projects/types/project.types';
 import { projectsApi } from '@/src/features/projects/api/projects.api';
 import { Pagination } from '@/src/components/ui/pagination';
+import { useAuth } from '@/src/features/auth/context/use-auth';
 
 const ITEMS_PER_PAGE = 10;
 
 export default function ProjectsPage() {
+  const { user } = useAuth();
+  const readOnly = user?.systemRole === 'SUPER_ADMIN';
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'ALL'>('ALL');
   const [customerFilter, setCustomerFilter] = useState('ALL');
@@ -22,7 +25,7 @@ export default function ProjectsPage() {
     setLoading(true); setLoadError('');
     try {
       const rows = await projectsApi.list();
-      setProjects(rows.map((p) => { const primary = p.projectCustomers?.find((r) => r.isPrimary) || p.projectCustomers?.[0]; return { id: p.id, projectCode: p.projectCode, name: p.name, customerId: primary?.customerId ?? '', customerName: primary?.customer?.name ?? '—', status: ({ PLANNING: 'Planning', ACTIVE: 'Active', COMPLETED: 'Completed', ON_HOLD: 'On Hold', CANCELLED: 'Cancelled' } as const)[p.status], progress: p.progress, startDate: p.plannedStartDate ?? '', plannedEndDate: p.plannedEndDate ?? '', description: p.description ?? undefined, budget: p.budget ?? undefined, createdAt: p.createdAt }; }));
+      setProjects(rows.map((p) => { const primary = p.projectCustomers?.find((r) => r.isPrimary) || p.projectCustomers?.[0]; return { id: p.id, projectCode: p.projectCode, name: p.name, customerId: primary?.customerId ?? '', customerName: primary?.customer?.name ?? '—', organizationName: p.organization?.name, status: ({ PLANNING: 'Planning', ACTIVE: 'Active', COMPLETED: 'Completed', ON_HOLD: 'On Hold', CANCELLED: 'Cancelled' } as const)[p.status], progress: p.progress, startDate: p.plannedStartDate ?? '', plannedEndDate: p.plannedEndDate ?? '', description: p.description ?? undefined, budget: p.budget ?? undefined, createdAt: p.createdAt }; }));
     } catch (error: any) { setLoadError(error?.response?.data?.message || 'Unable to load projects.'); }
     finally { setLoading(false); }
   };
@@ -92,7 +95,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="w-full mx-auto pb-12 min-w-0">
-      <ProjectPageHeader />
+      <ProjectPageHeader readOnly={readOnly} />
 
       <ProjectFilters
         projects={projects}
@@ -112,6 +115,7 @@ export default function ProjectsPage() {
         onClearFilters={handleReset}
         currentPage={validCurrentPage}
         itemsPerPage={ITEMS_PER_PAGE}
+        readOnly={readOnly}
       />}
 
       {/* Pagination UI */}

@@ -14,6 +14,7 @@ export interface LabourAssignment {
   projectId: string;
   projectCode: string;
   projectName: string;
+  organizationName?: string;
   startDate?: string;
   endDate?: string;
   status: LabourAssignmentStatus;

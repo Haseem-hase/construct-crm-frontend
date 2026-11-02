@@ -2,6 +2,7 @@ export type LabourStatus = 'ACTIVE' | 'INACTIVE';
 
 export interface Labour {
   id: string;
+  organizationName?: string;
   professionId: string;
   professionName: string;
   fullName: string;

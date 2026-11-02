@@ -7,8 +7,11 @@ import { AssignmentTable } from '@/src/features/assignments/components/assignmen
 import { Assignment, AssignmentStatus } from '@/src/features/assignments/types/assignment.types';
 import { assignmentsApi } from '@/src/features/assignments/api/assignments.api';
 import { Pagination } from '@/src/components/ui/pagination';
+import { useAuth } from '@/src/features/auth/context/use-auth';
 
 export default function AssignmentsPage() {
+  const { user } = useAuth();
+  const readOnly = user?.systemRole === 'SUPER_ADMIN';
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<AssignmentStatus | ''>('');
   const [projectFilter, setProjectFilter] = useState('');
@@ -18,7 +21,7 @@ export default function AssignmentsPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const load = async () => { setLoading(true); setLoadError(''); try { const rows = await assignmentsApi.list(); setAssignments(rows.map((a) => ({ id: a.id, projectId: a.projectId, projectCode: a.project.projectCode, projectName: a.project.name, contractorId: a.contractorId, contractorCode: a.contractor.contractorCode, contractorName: a.contractor.fullName, responsibilityIds: a.responsibilities.map((r) => r.responsibilityId), responsibilityNames: a.responsibilities.map((r) => r.responsibility.name), scope: a.scopeDescription || '', startDate: a.startDate || undefined, endDate: a.endDate || undefined, status: a.status, notes: a.notes || undefined, createdAt: a.createdAt }))); } catch (error: any) { setLoadError(error?.response?.data?.message || 'Unable to load contractor assignments.'); } finally { setLoading(false); } };
+  const load = async () => { setLoading(true); setLoadError(''); try { const rows = await assignmentsApi.list(); setAssignments(rows.map((a) => ({ id: a.id, projectId: a.projectId, projectCode: a.project.projectCode, projectName: a.project.name, organizationName: a.project.organization?.name, contractorId: a.contractorId, contractorCode: a.contractor.contractorCode, contractorName: a.contractor.fullName, responsibilityIds: a.responsibilities.map((r) => r.responsibilityId), responsibilityNames: a.responsibilities.map((r) => r.responsibility.name), scope: a.scopeDescription || '', startDate: a.startDate || undefined, endDate: a.endDate || undefined, status: a.status, notes: a.notes || undefined, createdAt: a.createdAt }))); } catch (error: any) { setLoadError(error?.response?.data?.message || 'Unable to load contractor assignments.'); } finally { setLoading(false); } };
   useEffect(() => { void load(); }, []);
 
   const handleReset = () => {
@@ -67,7 +70,7 @@ export default function AssignmentsPage() {
 
   return (
     <div className="w-full mx-auto pb-12 min-w-0">
-      <AssignmentPageHeader />
+      <AssignmentPageHeader readOnly={readOnly} />
 
         <AssignmentFilters
           assignments={assignments}
@@ -88,6 +91,7 @@ export default function AssignmentsPage() {
           assignments={paginatedAssignments}
           currentPage={currentPage}
           itemsPerPage={itemsPerPage}
+          readOnly={readOnly}
         />}
 
         {totalPages > 1 && (

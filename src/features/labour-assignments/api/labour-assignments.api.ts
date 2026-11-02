@@ -1,7 +1,7 @@
 import { apiClient } from '@/src/lib/api/client';
 import type { ApiEnvelope } from '@/src/features/projects/api/projects.api';
 
-export type ApiLabourAssignment = { id: string; labourId: string; contractorProjectAssignmentId: string; startDate: string; endDate: string; status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED'; notes: string | null; labour: { id: string; fullName: string; phone: string; professionId: string }; assignment: { id: string; project: { id: string; projectCode: string; name: string }; contractor: { id: string; contractorCode: string; fullName: string } }; createdAt: string };
+export type ApiLabourAssignment = { id: string; labourId: string; contractorProjectAssignmentId: string; startDate: string; endDate: string; status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED'; notes: string | null; labour: { id: string; fullName: string; phone: string; professionId: string; organization?: { id: string; name: string } }; assignment: { id: string; project: { id: string; projectCode: string; name: string; organization?: { id: string; name: string } }; contractor: { id: string; contractorCode: string; fullName: string; organization?: { id: string; name: string } } }; createdAt: string };
 export type LabourAssignmentPayload = { labourId: string; contractorProjectAssignmentId: string; startDate: string; endDate: string; notes?: string };
 export const labourAssignmentsApi = {
   async list() { return (await apiClient.get<ApiEnvelope<{ assignments: ApiLabourAssignment[] }>>('/labour-assignments')).data.data.assignments; },

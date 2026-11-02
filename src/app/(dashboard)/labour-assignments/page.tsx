@@ -8,8 +8,11 @@ import { LabourAssignment, LabourAssignmentStatus } from '@/src/features/labour-
 import { labourAssignmentsApi } from '@/src/features/labour-assignments/api/labour-assignments.api';
 import { labourApi } from '@/src/features/labour/api/labour.api';
 import { Pagination } from '@/src/components/ui/pagination';
+import { useAuth } from '@/src/features/auth/context/use-auth';
 
 export default function LabourAssignmentsPage() {
+  const { user } = useAuth();
+  const readOnly = user?.systemRole === 'SUPER_ADMIN';
   const [searchTerm, setSearchTerm] = useState('');
   const [labourFilter, setLabourFilter] = useState('');
   const [professionFilter, setProfessionFilter] = useState('');
@@ -21,7 +24,7 @@ export default function LabourAssignmentsPage() {
   const [assignments, setAssignments] = useState<LabourAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const load = async () => { setLoading(true); setLoadError(''); try { const [rows, labours] = await Promise.all([labourAssignmentsApi.list(), labourApi.list()]); const labourById = new Map(labours.map((l) => [l.id, l])); setAssignments(rows.map((a) => { const labour = labourById.get(a.labourId); return { id: a.id, labourId: a.labourId, labourName: a.labour.fullName, labourPhone: a.labour.phone, professionId: labour?.professionId || '', professionName: labour?.profession.name || '—', contractorProjectAssignmentId: a.contractorProjectAssignmentId, contractorId: a.assignment.contractor.id, contractorCode: a.assignment.contractor.contractorCode, contractorName: a.assignment.contractor.fullName, projectId: a.assignment.project.id, projectCode: a.assignment.project.projectCode, projectName: a.assignment.project.name, startDate: a.startDate, endDate: a.endDate, status: a.status, notes: a.notes || undefined, createdAt: a.createdAt }; })); } catch (error: any) { setLoadError(error?.response?.data?.message || 'Unable to load labour assignments.'); } finally { setLoading(false); } };
+  const load = async () => { setLoading(true); setLoadError(''); try { const [rows, labours] = await Promise.all([labourAssignmentsApi.list(), labourApi.list()]); const labourById = new Map(labours.map((l) => [l.id, l])); setAssignments(rows.map((a) => { const labour = labourById.get(a.labourId); return { id: a.id, labourId: a.labourId, labourName: a.labour.fullName, labourPhone: a.labour.phone, professionId: labour?.professionId || '', professionName: labour?.profession.name || '—', contractorProjectAssignmentId: a.contractorProjectAssignmentId, contractorId: a.assignment.contractor.id, contractorCode: a.assignment.contractor.contractorCode, contractorName: a.assignment.contractor.fullName, projectId: a.assignment.project.id, projectCode: a.assignment.project.projectCode, projectName: a.assignment.project.name, organizationName: a.assignment.project.organization?.name, startDate: a.startDate, endDate: a.endDate, status: a.status, notes: a.notes || undefined, createdAt: a.createdAt }; })); } catch (error: any) { setLoadError(error?.response?.data?.message || 'Unable to load labour assignments.'); } finally { setLoading(false); } };
   useEffect(() => { void load(); }, []);
 
   const handleReset = () => {
@@ -72,7 +75,7 @@ export default function LabourAssignmentsPage() {
 
   return (
     <div className="w-full mx-auto pb-12 min-w-0">
-      <LabourAssignmentPageHeader />
+      <LabourAssignmentPageHeader readOnly={readOnly} />
 
         <LabourAssignmentFilters
           assignments={assignments}
@@ -97,6 +100,7 @@ export default function LabourAssignmentsPage() {
           assignments={paginatedAssignments}
           currentPage={currentPage}
           itemsPerPage={itemsPerPage}
+          readOnly={readOnly}
         />}
 
         {totalPages > 1 && (

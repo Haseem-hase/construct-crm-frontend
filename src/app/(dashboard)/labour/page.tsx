@@ -7,10 +7,13 @@ import { Labour } from '@/src/features/labour/types/labour.types';
 import { LabourPageHeader } from '@/src/features/labour/components/labour-page-header';
 import { LabourFilters } from '@/src/features/labour/components/labour-filters';
 import { LabourTable } from '@/src/features/labour/components/labour-table';
+import { useAuth } from '@/src/features/auth/context/use-auth';
 
 const ITEMS_PER_PAGE = 10;
 
 export default function LabourPage() {
+  const { user } = useAuth();
+  const readOnly = user?.systemRole === 'SUPER_ADMIN';
   const [searchQuery, setSearchQuery] = useState('');
   const [professionFilter, setProfessionFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -22,7 +25,7 @@ export default function LabourPage() {
   const [loading, setLoading] = useState(true);
   const load = async () => {
     setLoading(true); setLoadError('');
-    try { const rows = await labourApi.list(); setLabourRows(rows.map((l: ApiLabour) => ({ ...l, professionName: l.profession.name, email: l.email ?? undefined, dateOfBirth: l.dateOfBirth ?? undefined, address: l.address ?? undefined, emergencyContactName: l.emergencyContactName ?? undefined, emergencyContactPhone: l.emergencyContactPhone ?? undefined, joiningDate: l.joiningDate ?? undefined, profileImageUrl: l.profileImageUrl ?? undefined, notes: l.notes ?? undefined }))); }
+    try { const rows = await labourApi.list(); setLabourRows(rows.map((l: ApiLabour) => ({ ...l, organizationName: l.organization?.name, professionName: l.profession.name, email: l.email ?? undefined, dateOfBirth: l.dateOfBirth ?? undefined, address: l.address ?? undefined, emergencyContactName: l.emergencyContactName ?? undefined, emergencyContactPhone: l.emergencyContactPhone ?? undefined, joiningDate: l.joiningDate ?? undefined, profileImageUrl: l.profileImageUrl ?? undefined, notes: l.notes ?? undefined }))); }
     catch (error: any) { setLoadError(error?.response?.data?.message || 'Unable to load labour records.'); }
     finally { setLoading(false); }
   };
@@ -82,7 +85,7 @@ export default function LabourPage() {
 
   return (
     <div className="w-full mx-auto pb-12 min-w-0">
-      <LabourPageHeader />
+      <LabourPageHeader readOnly={readOnly} />
       
       <LabourFilters
         searchQuery={searchQuery}
@@ -106,6 +109,7 @@ export default function LabourPage() {
         totalPages={totalPages}
         itemsPerPage={ITEMS_PER_PAGE}
         onPageChange={setCurrentPage}
+        readOnly={readOnly}
       />}
     </div>
   );
