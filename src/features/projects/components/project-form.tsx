@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { projectImageUrl } from '../utils/project-image';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
@@ -29,6 +30,8 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
   const [customerId, setCustomerId] = useState(initialData?.customerId || '');
   const [description, setDescription] = useState(initialData?.description || '');
   const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || '');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(projectImageUrl(initialData?.imageUrl));
   const [status, setStatus] = useState<ProjectStatus>(initialData?.status || 'Planning');
   const [startDate, setStartDate] = useState(initialData?.startDate?.split('T')[0] || '');
   const [plannedEndDate, setPlannedEndDate] = useState(initialData?.plannedEndDate?.split('T')[0] || '');
@@ -41,6 +44,7 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
   const [customersLoading, setCustomersLoading] = useState(true);
   const [customersError, setCustomersError] = useState('');
   const [formError, setFormError] = useState('');
+  useEffect(() => () => { if (imagePreview?.startsWith('blob:')) URL.revokeObjectURL(imagePreview); }, [imagePreview]);
   const loadCustomers = async () => {
     setCustomersLoading(true); setCustomersError('');
     try { const response = await customersApi.getCustomers(); setCustomers(response.data.customers); }
@@ -70,7 +74,7 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = 'Project name is required.';
     if (!customerId) newErrors.customerId = customers.length ? 'Customer is required.' : 'Create or load a customer before saving this project.';
-    if (imageUrl && !/^https?:\/\//i.test(imageUrl)) newErrors.imageUrl = 'Enter a valid http or https image URL.';
+    if (imageUrl && !/^https?:\/\//i.test(imageUrl) && !/^\/uploads\/projects\/[0-9a-f-]{36}\/[a-zA-Z0-9-]+\.(jpg|png|webp)$/i.test(imageUrl)) newErrors.imageUrl = 'Enter a valid http or https image URL.';
     if (budget && Number(budget) < 0) newErrors.budget = 'Budget cannot be negative.';
     if (progress < 0 || progress > 100) newErrors.progress = 'Progress must be between 0 and 100.';
     
@@ -93,7 +97,7 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
     setFormError('');
     try {
     const statusValue = ({ Planning: 'PLANNING', Active: 'ACTIVE', Completed: 'COMPLETED', 'On Hold': 'ON_HOLD', Cancelled: 'CANCELLED' } as const)[status];
-    const commonPayload = { name: name.trim(), description: description.trim() || null, imageUrl: imageUrl.trim() || null, status: statusValue, plannedStartDate: startDate || null, plannedEndDate: plannedEndDate || null, budget: budget ? Number(budget) : null, progress };
+    const commonPayload = { name: name.trim(), description: description.trim() || null, imageUrl: imageUrl.trim() || null, ...(imageFile ? { image: imageFile } : {}), status: statusValue, plannedStartDate: startDate || null, plannedEndDate: plannedEndDate || null, budget: budget ? Number(budget) : null, progress };
     if (mode === 'edit' && initialData?.id) {
       await dispatch(updateProject({ id: initialData.id, payload: commonPayload })).unwrap();
       if (customerId !== initialData.customerId) {
@@ -102,7 +106,7 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
         else await projectsApi.addCustomer(initialData.id, customerId);
       }
     } else {
-      await dispatch(createProject({ name: commonPayload.name, country: 'Saudi Arabia', status: commonPayload.status, progress: commonPayload.progress, customerId, ...(commonPayload.description ? { description: commonPayload.description } : {}), ...(commonPayload.imageUrl ? { imageUrl: commonPayload.imageUrl } : {}), ...(commonPayload.plannedStartDate ? { plannedStartDate: commonPayload.plannedStartDate } : {}), ...(commonPayload.plannedEndDate ? { plannedEndDate: commonPayload.plannedEndDate } : {}), ...(commonPayload.budget !== null ? { budget: commonPayload.budget } : {}) })).unwrap();
+      await dispatch(createProject({ name: commonPayload.name, country: 'Saudi Arabia', status: commonPayload.status, progress: commonPayload.progress, customerId, ...(commonPayload.description ? { description: commonPayload.description } : {}), ...(commonPayload.imageUrl ? { imageUrl: commonPayload.imageUrl } : {}), ...(commonPayload.image ? { image: commonPayload.image } : {}), ...(commonPayload.plannedStartDate ? { plannedStartDate: commonPayload.plannedStartDate } : {}), ...(commonPayload.plannedEndDate ? { plannedEndDate: commonPayload.plannedEndDate } : {}), ...(commonPayload.budget !== null ? { budget: commonPayload.budget } : {}) })).unwrap();
     }
     if (mode === 'edit' && initialData?.id) {
       router.push(`/projects/${initialData.id}`);
@@ -142,8 +146,32 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
             {customersError && <p role="alert" className="text-sm text-red-600 md:col-span-2">{customersError} <button type="button" className="underline" onClick={() => void loadCustomers()}>Retry</button></p>}
             {!customersLoading && !customersError && customers.length === 0 && <p className="text-sm text-neutral-500 md:col-span-2">No customers available. Add a customer before creating a project.</p>}
 
-            <FormField label="Project Image URL" error={errors.imageUrl}>
-              <Input type="url" placeholder="https://example.com/project.jpg" value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
+            <FormField label="Project image" error={errors.imageUrl} helperText="Upload a JPEG, PNG, or WebP image up to 5 MB, or use an image URL.">
+              <div className="space-y-3">
+                {imagePreview && <img src={imagePreview} alt="Project image preview" className="h-40 w-full rounded-lg border border-neutral-200 bg-neutral-50 object-cover sm:max-w-sm" />}
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload project image" onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+                      setErrors(current => ({ ...current, imageUrl: 'Choose a JPEG, PNG, or WebP image no larger than 5 MB.' }));
+                      e.currentTarget.value = '';
+                      return;
+                    }
+                    setErrors(current => ({ ...current, imageUrl: '' }));
+                    setImageFile(file);
+                    setImageUrl('');
+                    setImagePreview(URL.createObjectURL(file));
+                  }} />
+                  <Input type="text" placeholder="https://example.com/project.jpg" value={imageUrl} aria-label="Project image URL" onChange={e => {
+                    const value = e.target.value;
+                    setImageFile(null);
+                    setImageUrl(value);
+                    setImagePreview(projectImageUrl(value));
+                  }} />
+                </div>
+                {imageFile && <button type="button" className="text-xs font-medium text-neutral-500 underline hover:text-neutral-900" onClick={() => { setImageFile(null); setImageUrl(initialData?.imageUrl || ''); setImagePreview(projectImageUrl(initialData?.imageUrl)); }}>Remove selected upload</button>}
+              </div>
             </FormField>
 
             <div className="md:col-span-2">

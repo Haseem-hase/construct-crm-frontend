@@ -18,6 +18,7 @@ import { ProjectContractorOverview } from '@/src/features/projects/components/pr
 import { ProjectLabourOverview } from '@/src/features/projects/components/project-labour-overview';
 import { assignmentsApi, ApiContractorAssignment } from '@/src/features/assignments/api/assignments.api';
 import { labourAssignmentsApi, ApiLabourAssignment } from '@/src/features/labour-assignments/api/labour-assignments.api';
+import { projectImageUrl } from '@/src/features/projects/utils/project-image';
 
 interface ProjectDetailsPageProps { params: Promise<{ id: string }> }
 const fromApiStatus: Record<ApiProjectStatus, ProjectStatus> = { PLANNING: 'Planning', ACTIVE: 'Active', ON_HOLD: 'On Hold', COMPLETED: 'Completed', CANCELLED: 'Cancelled' };
@@ -54,8 +55,9 @@ export default function ProjectDetailsPage({ params }: ProjectDetailsPageProps) 
   const project: Project | null = useMemo(() => {
     if (!apiProject) return null;
     const primary = apiProject.projectCustomers?.find((relation) => relation.isPrimary) || apiProject.projectCustomers?.[0];
-    const image = apiProject.imageUrl ? [{ id: apiProject.id, url: apiProject.imageUrl, alt: apiProject.name, isCover: true }] : [];
-    return { id: apiProject.id, projectCode: apiProject.projectCode, name: apiProject.name, customerId: primary?.customerId || '', customerName: primary?.customer?.name || 'No customer', customerCode: primary?.customer?.customerCode, customerType: primary?.customer?.type, projectCustomerRelationId: primary?.id, projectCustomerRelations: apiProject.projectCustomers?.map(({ id, customerId }) => ({ id, customerId })) || [], status: fromApiStatus[apiProject.status], progress: apiProject.progress, startDate: apiProject.plannedStartDate || '', plannedEndDate: apiProject.plannedEndDate || '', description: apiProject.description || undefined, budget: apiProject.budget ?? undefined, imageUrl: apiProject.imageUrl || undefined, images: image, createdAt: apiProject.createdAt };
+    const resolvedImageUrl = projectImageUrl(apiProject.imageUrl);
+    const image = resolvedImageUrl ? [{ id: apiProject.id, url: resolvedImageUrl, alt: apiProject.name, isCover: true }] : [];
+    return { id: apiProject.id, projectCode: apiProject.projectCode, name: apiProject.name, customerId: primary?.customerId || '', customerName: primary?.customer?.name || 'No customer', customerCode: primary?.customer?.customerCode, customerType: primary?.customer?.type, projectCustomerRelationId: primary?.id, projectCustomerRelations: apiProject.projectCustomers?.map(({ id, customerId }) => ({ id, customerId })) || [], status: fromApiStatus[apiProject.status], progress: apiProject.progress, startDate: apiProject.plannedStartDate || '', plannedEndDate: apiProject.plannedEndDate || '', description: apiProject.description || undefined, budget: apiProject.budget ?? undefined, imageUrl: resolvedImageUrl || undefined, images: image, createdAt: apiProject.createdAt };
   }, [apiProject]);
 
   const saveInline = async (updates: Partial<Project>) => {

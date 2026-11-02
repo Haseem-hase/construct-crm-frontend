@@ -11,15 +11,27 @@ export type ApiProject = {
   createdAt: string; projectCustomers?: ApiProjectCustomer[];
 };
 export type ProjectPayload = {
-  name: string; description?: string | null; imageUrl?: string | null; status?: ApiProject['status']; country: string; city?: string | null; address?: string | null;
+  name: string; description?: string | null; imageUrl?: string | null; image?: File; status?: ApiProject['status']; country: string; city?: string | null; address?: string | null;
   plannedStartDate?: string | null; plannedEndDate?: string | null; progress?: number; budget?: number | null; customerId?: string;
+};
+
+const projectPayload = (payload: Partial<ProjectPayload>) => {
+  const { image, ...fields } = payload;
+  if (!image) return fields;
+
+  const formData = new FormData();
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined) formData.append(key, value === null ? 'null' : String(value));
+  });
+  formData.append('image', image);
+  return formData;
 };
 
 export const projectsApi = {
   async list() { return (await apiClient.get<ApiEnvelope<ApiProject[]>>('/projects')).data.data; },
   async get(id: string) { return (await apiClient.get<ApiEnvelope<ApiProject>>(`/projects/${id}`)).data.data; },
-  async create(payload: ProjectPayload) { return (await apiClient.post<ApiEnvelope<ApiProject>>('/projects', payload)).data.data; },
-  async update(id: string, payload: Partial<ProjectPayload>) { return (await apiClient.patch<ApiEnvelope<ApiProject>>(`/projects/${id}`, payload)).data.data; },
+  async create(payload: ProjectPayload) { return (await apiClient.post<ApiEnvelope<ApiProject>>('/projects', projectPayload(payload))).data.data; },
+  async update(id: string, payload: Partial<ProjectPayload>) { return (await apiClient.patch<ApiEnvelope<ApiProject>>(`/projects/${id}`, payload.image ? projectPayload(payload) : payload)).data.data; },
   async remove(id: string) { return (await apiClient.delete<ApiEnvelope<boolean>>(`/projects/${id}`)).data; },
   async getCustomers(id: string) { return (await apiClient.get<ApiEnvelope<ApiProjectCustomer[]>>(`/projects/${id}/customers`)).data.data; },
   async addCustomer(id: string, customerId: string) { return (await apiClient.post<ApiEnvelope<ApiProjectCustomer>>(`/projects/${id}/customers`, { customerId, relationshipType: 'OWNER', isPrimary: true })).data.data; },
