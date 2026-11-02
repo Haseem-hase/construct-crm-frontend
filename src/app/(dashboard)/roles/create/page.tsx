@@ -6,20 +6,19 @@ import { RoleForm } from '@/src/features/roles/components/role-form';
 import { useAuth } from '@/src/features/auth/context/use-auth';
 
 export default function CreateRolePage() {
-  const { user } = useAuth();
-  if (user?.systemRole === 'SUPER_ADMIN') {
-    return <div className="mx-auto max-w-4xl pb-12"><PageHeader title="Create Global Role" backLink={{ href: '/roles', label: 'Back to Roles' }} /><div className="rounded-lg border border-neutral-200 bg-white p-6 text-sm text-neutral-600">Global role creation has a backend API, but its permission assignments are provisioned across organizations. This organization-specific form cannot safely create a platform role.</div></div>;
-  }
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <p className="py-12 text-center text-sm text-neutral-500">Loading role access…</p>;
+  const isSuperAdmin = user?.systemRole === 'SUPER_ADMIN';
 
   return (
     <div className="w-full mx-auto pb-8 min-w-0">
       <PageHeader 
-        title="Create Custom Role"
-        subtitle="Create an organization-specific role and configure its permissions."
+        title={isSuperAdmin ? 'Create Global Role' : 'Create Custom Role'}
+        subtitle={isSuperAdmin ? 'Create a role that is available across organizations.' : 'Create an organization-specific role and configure its permissions.'}
         backLink={{ href: '/roles', label: 'Back to Roles' }}
       />
       
-      <RoleForm mode="create" />
+      <RoleForm mode="create" scope={isSuperAdmin ? 'global' : 'organization'} />
     </div>
   );
 }

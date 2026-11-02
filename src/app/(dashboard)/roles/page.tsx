@@ -48,7 +48,11 @@ export default function RolesPage() {
   if (isSuperAdmin) {
     return (
       <div className="w-full mx-auto pb-12 min-w-0">
-        <PageHeader title="Roles & Permissions" description="Global roles available across organizations." />
+        <PageHeader
+          title="Roles & Permissions"
+          description="Global roles available across organizations."
+          action={<Link href="/roles/create"><Button variant="primary">Create Global Role</Button></Link>}
+        />
         {globalStatus === 'loading' ? <p className="py-8 text-center text-sm text-neutral-500">Loading global roles…</p>
           : globalStatus === 'failed' ? <div role="alert" className="p-6 text-center bg-red-50 border border-red-200 rounded-lg text-red-700"><h3 className="text-lg font-medium mb-2">Error Loading Roles</h3><p className="mb-4">{globalError}</p><Button variant="outline" onClick={() => void loadGlobalRoles()}>Retry</Button></div>
             : globalRoles.length === 0 ? <div className="rounded-lg border border-neutral-200 bg-white p-10 text-center text-sm text-neutral-500">No global roles found.</div>
