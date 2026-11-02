@@ -5,6 +5,8 @@ export interface ProjectImage {
   url: string;
   alt?: string;
   isCover?: boolean;
+  isPersisted?: boolean;
+  file?: File;
 }
 
 export interface Project {
