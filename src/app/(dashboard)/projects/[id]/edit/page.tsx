@@ -10,6 +10,7 @@ import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { fetchProjectById, selectProjectDetailError, selectProjectDetailStatus, selectSelectedProject } from '@/src/features/projects/store/projectsSlice';
 import { ApiProjectStatus } from '@/src/features/projects/api/projects.api';
 import { Project, ProjectStatus } from '@/src/features/projects/types/project.types';
+import { projectImageUrl } from '@/src/features/projects/utils/project-image';
 
 interface EditProjectPageProps { params: Promise<{ id: string }> }
 const statusLabels: Record<ApiProjectStatus, ProjectStatus> = { PLANNING: 'Planning', ACTIVE: 'Active', ON_HOLD: 'On Hold', COMPLETED: 'Completed', CANCELLED: 'Cancelled' };
@@ -25,7 +26,10 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
   const project: Project | undefined = useMemo(() => {
     if (!apiProject || apiProject.id !== id) return undefined;
     const relation = apiProject.projectCustomers?.find((c) => c.isPrimary) || apiProject.projectCustomers?.[0];
-    return { id: apiProject.id, projectCode: apiProject.projectCode, name: apiProject.name, customerId: relation?.customerId || '', customerName: relation?.customer?.name || '', customerCode: relation?.customer?.customerCode, customerType: relation?.customer?.type, projectCustomerRelationId: relation?.id, projectCustomerRelations: apiProject.projectCustomers?.map(({ id, customerId }) => ({ id, customerId })) || [], status: statusLabels[apiProject.status], progress: apiProject.progress, startDate: apiProject.plannedStartDate || '', plannedEndDate: apiProject.plannedEndDate || '', description: apiProject.description || undefined, budget: apiProject.budget ?? undefined, imageUrl: apiProject.imageUrl || undefined, createdAt: apiProject.createdAt };
+    const images = apiProject.images?.length
+      ? apiProject.images.map(image => ({ id: image.id, url: projectImageUrl(image.imageUrl) || image.imageUrl, alt: image.alt || apiProject.name, isCover: image.isCover, isPersisted: true }))
+      : apiProject.imageUrl ? [{ id: apiProject.id, url: projectImageUrl(apiProject.imageUrl) || apiProject.imageUrl, alt: apiProject.name, isCover: true, isPersisted: false }] : [];
+    return { id: apiProject.id, projectCode: apiProject.projectCode, name: apiProject.name, customerId: relation?.customerId || '', customerName: relation?.customer?.name || '', customerCode: relation?.customer?.customerCode, customerType: relation?.customer?.type, projectCustomerRelationId: relation?.id, projectCustomerRelations: apiProject.projectCustomers?.map(({ id, customerId }) => ({ id, customerId })) || [], status: statusLabels[apiProject.status], progress: apiProject.progress, startDate: apiProject.plannedStartDate || '', plannedEndDate: apiProject.plannedEndDate || '', description: apiProject.description || undefined, budget: apiProject.budget ?? undefined, imageUrl: apiProject.imageUrl || undefined, images, createdAt: apiProject.createdAt };
   }, [apiProject, id]);
 
   if (status === 'loading' || status === 'idle') return <p className="py-12 text-center text-sm text-neutral-500">Loading project…</p>;

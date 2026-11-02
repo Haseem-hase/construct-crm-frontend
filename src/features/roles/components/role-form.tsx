@@ -12,6 +12,7 @@ import { OrganizationRole } from '../types/roles.types';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { fetchPermissions, selectPermissions, selectPermissionsStatus, selectPermissionsError } from '../store/permissionsSlice';
 import { groupPermissionsByModule } from '../utils/roles.utils';
+import { rolesApi } from '../api/roles.api';
 
 import { SuccessAlert } from '@/src/components/ui/success-alert';
 import { 
@@ -28,13 +29,15 @@ import {
 export interface RoleFormProps {
   mode: 'create' | 'edit';
   initialData?: OrganizationRole;
+  scope?: 'global' | 'organization';
 }
 
-function RoleFormInner({ mode, initialData }: RoleFormProps) {
+function RoleFormInner({ mode, initialData, scope = 'organization' }: RoleFormProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const isEdit = mode === 'edit';
   const isGlobal = isEdit && initialData?.role.isGlobal;
+  const isGlobalCreate = !isEdit && scope === 'global';
   
   const [formData, setFormData] = useState({
     name: initialData?.role.name || '',
@@ -44,6 +47,8 @@ function RoleFormInner({ mode, initialData }: RoleFormProps) {
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [globalCreateStatus, setGlobalCreateStatus] = useState<'idle' | 'loading'>('idle');
+  const [globalCreateError, setGlobalCreateError] = useState('');
   
   const searchParams = useSearchParams();
   const from = searchParams.get('from');
@@ -59,7 +64,7 @@ function RoleFormInner({ mode, initialData }: RoleFormProps) {
   const updateStatus = useAppSelector(selectUpdateRoleStatus);
   const updateError = useAppSelector(selectUpdateRoleError);
 
-  const isSubmitting = isEdit ? updateStatus === 'loading' : createStatus === 'loading';
+  const isSubmitting = isEdit ? updateStatus === 'loading' : isGlobalCreate ? globalCreateStatus === 'loading' : createStatus === 'loading';
 
   useEffect(() => {
     if (status === 'idle') {
@@ -158,6 +163,22 @@ function RoleFormInner({ mode, initialData }: RoleFormProps) {
         description: formData.description.trim() || undefined,
         permissionIds: formData.permissionIds
       };
+
+      if (isGlobalCreate) {
+        setGlobalCreateStatus('loading');
+        setGlobalCreateError('');
+        try {
+          await rolesApi.createGlobalRole(payload);
+          setShowSuccessAlert(true);
+          timeoutRef.current = setTimeout(() => router.push('/roles'), 1500);
+        } catch (error: any) {
+          setGlobalCreateError(error?.response?.data?.message || error?.response?.data?.errors?.[0]?.message || 'Failed to create global role.');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } finally {
+          setGlobalCreateStatus('idle');
+        }
+        return;
+      }
       
       const resultAction = await dispatch(createRole(payload));
       
@@ -187,15 +208,15 @@ function RoleFormInner({ mode, initialData }: RoleFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full min-w-0">
       <SuccessAlert 
-        title={isEdit ? "Role updated successfully" : "Role created successfully"}
-        description={isEdit ? "Your role changes have been saved successfully." : "Your custom role has been created successfully."}
+        title={isEdit ? "Role updated successfully" : isGlobalCreate ? "Global role created successfully" : "Role created successfully"}
+        description={isEdit ? "Your role changes have been saved successfully." : isGlobalCreate ? "The global role is now available to organizations." : "Your custom role has been created successfully."}
         show={showSuccessAlert} 
       />
       
-      {!isEdit && createStatus === 'failed' && createError && (
+      {!isEdit && ((isGlobalCreate && globalCreateError) || (!isGlobalCreate && createStatus === 'failed' && createError)) && (
         <div className="p-4 rounded-md bg-red-50 text-red-700 border border-red-200">
-          <h4 className="font-medium mb-1">Failed to Create Role</h4>
-          <p className="text-sm">{createError}</p>
+          <h4 className="font-medium mb-1">Failed to Create {isGlobalCreate ? 'Global ' : ''}Role</h4>
+          <p className="text-sm">{isGlobalCreate ? globalCreateError : createError}</p>
         </div>
       )}
 
@@ -217,6 +238,12 @@ function RoleFormInner({ mode, initialData }: RoleFormProps) {
                 <p className="text-sm text-neutral-600">
                   <span className="font-medium text-neutral-900">Note:</span> This is a global system role. The role name and description are managed by the system. You can configure the permissions for your organization.
                 </p>
+              </div>
+            )}
+
+            {isGlobalCreate && (
+              <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+              This role will be created for existing organizations with the permissions selected below.
               </div>
             )}
 
@@ -296,9 +323,9 @@ function RoleFormInner({ mode, initialData }: RoleFormProps) {
           variant="primary" 
           type="submit" 
           className="w-full sm:w-auto"
-          disabled={isSubmitting || status === 'loading' || status === 'failed'}
+          disabled={isSubmitting || showSuccessAlert || status === 'loading' || status === 'failed'}
         >
-          {isSubmitting ? 'Saving...' : (isEdit ? (isGlobal ? 'Save Permissions' : 'Save Changes') : 'Create Role')}
+          {isSubmitting ? 'Saving...' : (isEdit ? (isGlobal ? 'Save Permissions' : 'Save Changes') : isGlobalCreate ? 'Create Global Role' : 'Create Role')}
         </Button>
       </div>
     </form>

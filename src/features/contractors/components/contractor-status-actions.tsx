@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from '@/src/components/ui/button';
+import { Select } from '@/src/components/ui/select';
 import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
 import { ApiContractorStatus } from '../types/contractor.types';
 
@@ -11,22 +11,13 @@ interface ContractorStatusActionsProps {
   onStatusChange: (newStatus: ApiContractorStatus) => void | Promise<void>;
 }
 
-interface ActionConfig {
-  status: ApiContractorStatus;
-  label: string;
-  variant: 'primary' | 'secondary' | 'destructive' | 'outline';
-  dialogTitle: string;
-  dialogDescription: string;
-  confirmLabel: string;
-}
-
-const STATUS_CONFIGS: Record<ApiContractorStatus, { label: string; variant: 'primary' | 'secondary' | 'destructive' | 'outline' }> = {
-  ACTIVE: { label: 'Activate', variant: 'primary' },
-  PENDING: { label: 'Set to Pending', variant: 'outline' },
-  SUSPENDED: { label: 'Suspend', variant: 'destructive' },
-  INACTIVE: { label: 'Deactivate', variant: 'outline' },
-  TERMINATED: { label: 'Terminate', variant: 'destructive' },
-};
+const STATUS_OPTIONS: Array<{ value: ApiContractorStatus; label: string }> = [
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'ACTIVE', label: 'Active' },
+  { value: 'SUSPENDED', label: 'Suspended' },
+  { value: 'INACTIVE', label: 'Inactive' },
+  { value: 'TERMINATED', label: 'Terminated' },
+];
 
 export function ContractorStatusActions({
   status,
@@ -34,11 +25,6 @@ export function ContractorStatusActions({
   onStatusChange,
 }: ContractorStatusActionsProps) {
   const [pendingStatus, setPendingStatus] = useState<ApiContractorStatus | null>(null);
-
-  // Available target statuses (all statuses except current)
-  const availableStatuses: ApiContractorStatus[] = (
-    ['ACTIVE', 'PENDING', 'SUSPENDED', 'INACTIVE', 'TERMINATED'] as ApiContractorStatus[]
-  ).filter((s) => s !== status);
 
   const getDialogDetails = (target: ApiContractorStatus): {
     title: string;
@@ -85,9 +71,11 @@ export function ContractorStatusActions({
     }
   };
 
-  const handleActionClick = (target: ApiContractorStatus) => {
-    if (isUpdating) return;
-    setPendingStatus(target);
+  const handleSelectStatus = (value: string) => {
+    const target = value as ApiContractorStatus;
+    if (!isUpdating && target !== status && STATUS_OPTIONS.some(option => option.value === target)) {
+      setPendingStatus(target);
+    }
   };
 
   const handleConfirm = async () => {
@@ -101,22 +89,15 @@ export function ContractorStatusActions({
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2">
-        {availableStatuses.map((s) => {
-          const cfg = STATUS_CONFIGS[s];
-          return (
-            <Button
-              key={s}
-              variant={cfg.variant}
-              disabled={isUpdating}
-              onClick={() => handleActionClick(s)}
-              className="w-full sm:w-auto"
-            >
-              {cfg.label}
-            </Button>
-          );
-        })}
-      </div>
+      <Select
+        aria-label="Contractor status"
+        value={status}
+        options={STATUS_OPTIONS}
+        onChange={handleSelectStatus}
+        disabled={isUpdating}
+        fullWidth={false}
+        className="w-[190px]"
+      />
 
       <ConfirmationDialog
         open={pendingStatus !== null}

@@ -9,7 +9,6 @@ import {
   resetUpdateState,
 } from '../store/contractorsSlice';
 import { Button } from '@/src/components/ui/button';
-import { Badge } from '@/src/components/ui/badge';
 import { User } from '@/src/components/ui/icons';
 import { PageHeader } from '@/src/components/ui/page-header';
 import { ContractorStatusActions } from './contractor-status-actions';
@@ -17,23 +16,6 @@ import { ContractorStatusActions } from './contractor-status-actions';
 interface ContractorDetailsHeaderProps {
   contractor: ApiContractor;
   onStatusSuccess?: (message: string) => void;
-}
-
-function getStatusVariant(status: ApiContractorStatus): 'default' | 'success' | 'warning' | 'destructive' | 'info' | 'neutral' {
-  switch (status) {
-    case 'ACTIVE':
-      return 'success';
-    case 'PENDING':
-      return 'warning';
-    case 'SUSPENDED':
-      return 'destructive';
-    case 'INACTIVE':
-      return 'neutral';
-    case 'TERMINATED':
-      return 'destructive';
-    default:
-      return 'default';
-  }
 }
 
 export function ContractorDetailsHeader({ contractor, onStatusSuccess }: ContractorDetailsHeaderProps) {
@@ -82,11 +64,6 @@ export function ContractorDetailsHeader({ contractor, onStatusSuccess }: Contrac
       <PageHeader
         title={contractor.fullName}
         subtitle={contractor.contractorCode}
-        badges={
-          <Badge variant={getStatusVariant(contractor.status)}>
-            {contractor.status}
-          </Badge>
-        }
         backLink={{ href: '/contractors', label: 'Back to Contractors' }}
         avatar={
           <div className="w-[72px] h-[72px] md:w-[96px] md:h-[96px] shrink-0 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center overflow-hidden">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ProjectImage } from '../types/project.types';
 import { Button } from '@/src/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
@@ -10,35 +10,77 @@ import { Dialog } from '@/src/components/ui/dialog';
 interface ProjectImageManagerProps {
   images: ProjectImage[];
   onChange: (images: ProjectImage[]) => void;
+  error?: string;
 }
 
-export function ProjectImageManager({ images, onChange }: ProjectImageManagerProps) {
+export function ProjectImageManager({ images, onChange, error: formError }: ProjectImageManagerProps) {
   const [imageToRemove, setImageToRemove] = useState<string | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [imageUrl, setImageUrl] = useState('');
+  const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imagesRef = useRef(images);
+  imagesRef.current = images;
+
+  useEffect(() => () => {
+    imagesRef.current.forEach(image => { if (image.url.startsWith('blob:')) URL.revokeObjectURL(image.url); });
+  }, []);
 
   const handleAddImages = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
-
-    const newImages: ProjectImage[] = Array.from(e.target.files).map(file => ({
-      id: `img-${Date.now()}-${Math.random()}`,
+    const files = Array.from(e.target.files);
+    if (images.length + files.length > 10) {
+      setError('Projects can have up to 10 images.');
+      e.target.value = '';
+      return;
+    }
+    const invalid = files.find(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024);
+    if (invalid) {
+      setError(`${invalid.name} must be a JPEG, PNG, or WebP image no larger than 5 MB.`);
+      e.target.value = '';
+      return;
+    }
+    const added = files.map((file, index): ProjectImage => ({
+      id: `new-${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
       url: URL.createObjectURL(file),
       alt: file.name,
-      isCover: false
+      file,
+      isPersisted: false,
+      isCover: false,
     }));
-
-    const allImages = [...images, ...newImages];
-    
-    // If there was no cover before, make the first new one the cover
-    if (!allImages.find(img => img.isCover) && allImages.length > 0) {
-      allImages[0].isCover = true;
-    }
-
+    const allImages = [...images, ...added];
+    if (!allImages.some(img => img.isCover) && allImages.length) allImages[0].isCover = true;
+    setError('');
     onChange(allImages);
-    
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleAddUrl = () => {
+    const value = imageUrl.trim();
+    if (!value) return;
+    if (images.length >= 10) {
+      setError('Projects can have up to 10 images.');
+      return;
+    }
+    try {
+      const parsed = new URL(value);
+      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('invalid protocol');
+    } catch {
+      setError('Enter a valid http or https image URL.');
+      return;
+    }
+    const added: ProjectImage = {
+      id: `url-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      url: value,
+      alt: value.split('/').pop() || 'Project image',
+      isPersisted: false,
+      isCover: images.length === 0,
+    };
+    onChange([...images, added]);
+    setImageUrl('');
+    setError('');
   };
 
   const handleSetCover = (id: string, e: React.MouseEvent) => {
@@ -51,7 +93,8 @@ export function ProjectImageManager({ images, onChange }: ProjectImageManagerPro
 
   const handleConfirmRemove = () => {
     if (!imageToRemove) return;
-    
+    const removed = images.find(img => img.id === imageToRemove);
+    if (removed?.url.startsWith('blob:')) URL.revokeObjectURL(removed.url);
     const updatedImages = images.filter(img => img.id !== imageToRemove);
     
     // If we removed the cover, promote the first available image
@@ -59,6 +102,7 @@ export function ProjectImageManager({ images, onChange }: ProjectImageManagerPro
       updatedImages[0].isCover = true;
     }
 
+    setPreviewIndex(current => current === null || updatedImages.length === 0 ? null : Math.min(current, updatedImages.length - 1));
     onChange(updatedImages);
     setImageToRemove(null);
   };
@@ -91,12 +135,17 @@ export function ProjectImageManager({ images, onChange }: ProjectImageManagerPro
               ref={fileInputRef}
               onChange={handleAddImages}
             />
-            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+            <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
               + Add Images
             </Button>
           </div>
         </CardHeader>
         <CardContent>
+          <div className="mb-5 flex flex-col gap-2 sm:flex-row">
+            <input type="url" value={imageUrl} onChange={event => setImageUrl(event.target.value)} placeholder="https://example.com/project-image.jpg" aria-label="Project image URL" className="h-10 min-w-0 flex-1 rounded-md border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-neutral-400" />
+            <Button type="button" variant="outline" onClick={handleAddUrl}>Add image URL</Button>
+          </div>
+          {(error || formError) && <p role="alert" className="mb-4 text-sm text-red-600">{error || formError}</p>}
           {images.length === 0 ? (
             <div className="text-center py-8 text-neutral-500 bg-neutral-50 rounded-xl border border-dashed border-neutral-200">
               No images added yet. Click &quot;Add Images&quot; to upload some.
@@ -115,7 +164,7 @@ export function ProjectImageManager({ images, onChange }: ProjectImageManagerPro
                   {/* Overlay Actions */}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">
                     {!img.isCover && (
-                      <Button 
+                      <Button type="button"
                         variant="secondary" 
                         size="sm" 
                         className="bg-white/90 text-neutral-900 hover:bg-white border-none h-8 px-3"
@@ -124,7 +173,7 @@ export function ProjectImageManager({ images, onChange }: ProjectImageManagerPro
                         Set Cover
                       </Button>
                     )}
-                    <Button 
+                    <Button type="button"
                       variant="destructive" 
                       size="sm"
                       className="h-8 px-3"
@@ -178,7 +227,7 @@ export function ProjectImageManager({ images, onChange }: ProjectImageManagerPro
             />
             
             {previewIndex > 0 && (
-              <Button 
+                <Button type="button"
                 variant="ghost" 
                 size="sm"
                 className="absolute left-2 text-white hover:bg-white/20 h-10 w-10 rounded-full p-0"
@@ -192,7 +241,7 @@ export function ProjectImageManager({ images, onChange }: ProjectImageManagerPro
             )}
             
             {previewIndex < images.length - 1 && (
-              <Button 
+              <Button type="button"
                 variant="ghost" 
                 size="sm"
                 className="absolute right-2 text-white hover:bg-white/20 h-10 w-10 rounded-full p-0"

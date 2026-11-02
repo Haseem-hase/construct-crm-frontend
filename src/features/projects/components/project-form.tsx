@@ -9,7 +9,8 @@ import { Textarea } from '@/src/components/ui/textarea';
 import { Select } from '@/src/components/ui/select';
 import { FormField } from '@/src/components/ui/form-field';
 import { Progress } from '@/src/components/ui/progress';
-import { Project, ProjectStatus } from '../types/project.types';
+import { Project, ProjectImage, ProjectStatus } from '../types/project.types';
+import { ProjectImageManager } from './project-image-manager';
 import { customersApi } from '@/src/features/customers/api/customers.api';
 import { projectsApi } from '../api/projects.api';
 import { createProject, updateProject } from '../store/projectsSlice';
@@ -28,7 +29,7 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
   const [name, setName] = useState(initialData?.name || '');
   const [customerId, setCustomerId] = useState(initialData?.customerId || '');
   const [description, setDescription] = useState(initialData?.description || '');
-  const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || '');
+  const [projectImages, setProjectImages] = useState<ProjectImage[]>(initialData?.images || []);
   const [status, setStatus] = useState<ProjectStatus>(initialData?.status || 'Planning');
   const [startDate, setStartDate] = useState(initialData?.startDate?.split('T')[0] || '');
   const [plannedEndDate, setPlannedEndDate] = useState(initialData?.plannedEndDate?.split('T')[0] || '');
@@ -70,7 +71,7 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = 'Project name is required.';
     if (!customerId) newErrors.customerId = customers.length ? 'Customer is required.' : 'Create or load a customer before saving this project.';
-    if (imageUrl && !/^https?:\/\//i.test(imageUrl)) newErrors.imageUrl = 'Enter a valid http or https image URL.';
+    if ((projectImages?.length || 0) > 10) newErrors.images = 'Projects can have up to 10 images.';
     if (budget && Number(budget) < 0) newErrors.budget = 'Budget cannot be negative.';
     if (progress < 0 || progress > 100) newErrors.progress = 'Progress must be between 0 and 100.';
     
@@ -93,7 +94,14 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
     setFormError('');
     try {
     const statusValue = ({ Planning: 'PLANNING', Active: 'ACTIVE', Completed: 'COMPLETED', 'On Hold': 'ON_HOLD', Cancelled: 'CANCELLED' } as const)[status];
-    const commonPayload = { name: name.trim(), description: description.trim() || null, imageUrl: imageUrl.trim() || null, status: statusValue, plannedStartDate: startDate || null, plannedEndDate: plannedEndDate || null, budget: budget ? Number(budget) : null, progress };
+    const images = projectImages || [];
+    const uploadedImages = images.filter(image => image.file).map(image => image.file!);
+    const imageGallery = images.map(image => {
+      if (image.isPersisted) return { source: 'existing' as const, id: image.id, isCover: !!image.isCover };
+      if (image.file) return { source: 'upload' as const, uploadIndex: uploadedImages.indexOf(image.file), isCover: !!image.isCover, alt: image.alt };
+      return { source: 'url' as const, url: image.url, isCover: !!image.isCover, alt: image.alt };
+    });
+    const commonPayload = { name: name.trim(), description: description.trim() || null, imageGallery, ...(uploadedImages.length ? { images: uploadedImages } : {}), status: statusValue, plannedStartDate: startDate || null, plannedEndDate: plannedEndDate || null, budget: budget ? Number(budget) : null, progress };
     if (mode === 'edit' && initialData?.id) {
       await dispatch(updateProject({ id: initialData.id, payload: commonPayload })).unwrap();
       if (customerId !== initialData.customerId) {
@@ -102,7 +110,7 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
         else await projectsApi.addCustomer(initialData.id, customerId);
       }
     } else {
-      await dispatch(createProject({ name: commonPayload.name, country: 'Saudi Arabia', status: commonPayload.status, progress: commonPayload.progress, customerId, ...(commonPayload.description ? { description: commonPayload.description } : {}), ...(commonPayload.imageUrl ? { imageUrl: commonPayload.imageUrl } : {}), ...(commonPayload.plannedStartDate ? { plannedStartDate: commonPayload.plannedStartDate } : {}), ...(commonPayload.plannedEndDate ? { plannedEndDate: commonPayload.plannedEndDate } : {}), ...(commonPayload.budget !== null ? { budget: commonPayload.budget } : {}) })).unwrap();
+      await dispatch(createProject({ name: commonPayload.name, country: 'Saudi Arabia', status: commonPayload.status, progress: commonPayload.progress, customerId, imageGallery: commonPayload.imageGallery, ...(commonPayload.images ? { images: commonPayload.images } : {}), ...(commonPayload.description ? { description: commonPayload.description } : {}), ...(commonPayload.plannedStartDate ? { plannedStartDate: commonPayload.plannedStartDate } : {}), ...(commonPayload.plannedEndDate ? { plannedEndDate: commonPayload.plannedEndDate } : {}), ...(commonPayload.budget !== null ? { budget: commonPayload.budget } : {}) })).unwrap();
     }
     if (mode === 'edit' && initialData?.id) {
       router.push(`/projects/${initialData.id}`);
@@ -142,10 +150,6 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
             {customersError && <p role="alert" className="text-sm text-red-600 md:col-span-2">{customersError} <button type="button" className="underline" onClick={() => void loadCustomers()}>Retry</button></p>}
             {!customersLoading && !customersError && customers.length === 0 && <p className="text-sm text-neutral-500 md:col-span-2">No customers available. Add a customer before creating a project.</p>}
 
-            <FormField label="Project Image URL" error={errors.imageUrl}>
-              <Input type="url" placeholder="https://example.com/project.jpg" value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
-            </FormField>
-
             <div className="md:col-span-2">
               <FormField label="Description" error={errors.description}>
                 <Textarea 
@@ -159,6 +163,8 @@ export function ProjectForm({ mode, initialData }: ProjectFormProps) {
           </div>
         </CardContent>
       </Card>
+
+      <ProjectImageManager images={projectImages || []} onChange={setProjectImages} error={errors.images} />
 
       <Card>
         <CardHeader>
