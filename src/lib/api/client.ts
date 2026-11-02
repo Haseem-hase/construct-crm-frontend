@@ -51,6 +51,10 @@ export function invalidatePendingAuthRefreshes() {
 apiClient.interceptors.request.use(
   (config: CustomAxiosRequestConfig) => {
     config._authGeneration = authSessionGeneration;
+    if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+      // Let the browser add the multipart boundary required by Multer.
+      config.headers?.delete('Content-Type');
+    }
     const accessToken = getAccessToken();
     if (accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${accessToken}`;
