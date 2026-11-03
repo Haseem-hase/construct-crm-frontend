@@ -13,8 +13,8 @@ export function SummaryCards({ data }: { data: SummaryStats }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
       {cards.map((c, i) => (
-        <div key={i} className="bg-white p-5 rounded-lg border border-neutral-200/60 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.02)] flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-600">
+        <div key={i} className="bg-white p-5 rounded-lg border border-neutral-200/60 flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-full bg-neutral-300 flex items-center justify-center text-neutral-600">
             <c.icon className="w-5 h-5" />
           </div>
           <div>

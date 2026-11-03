@@ -5,7 +5,7 @@ export function LabourAvailabilitySection({ data }: { data: LabourAvailability }
   const percentAssigned = data.total > 0 ? (data.assigned / data.total) * 100 : 0;
   
   return (
-    <div className="bg-white p-6 rounded-lg border border-neutral-200/60 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.02)] h-full flex flex-col">
+    <div className="bg-white p-6 rounded-sm border border-neutral-200/60 h-full flex flex-col">
       <h3 className="text-base font-semibold text-neutral-900 mb-6 tracking-tight">Labour Availability</h3>
       
       <div className="flex flex-col flex-1 justify-between">

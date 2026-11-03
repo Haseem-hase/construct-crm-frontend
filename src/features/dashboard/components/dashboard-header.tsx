@@ -9,8 +9,8 @@ export function DashboardHeader() {
   }).format(new Date());
 
   return (
-    <div className="mb-8">
-      <h1 className="text-3xl font-semibold tracking-tight text-neutral-900">Dashboard</h1>
+    <div className="mb-4">
+      <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">Dashboard</h1>
       <div className="flex items-center space-x-2 mt-1">
         <p className="text-[15px] text-neutral-500">Overview of your organization</p>
         <span className="text-neutral-300">&bull;</span>
