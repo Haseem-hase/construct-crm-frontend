@@ -254,7 +254,7 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
           licenseExpiryDate: licenseExpiryDate ? new Date(licenseExpiryDate).toISOString() : null,
           status,
           notes: notes.trim(),
-          profileImageUrl: !profileImageUrl && initialData?.profileImageUrl ? '' : undefined,
+          profileImageUrl: !profileImageUrl && 'profileImageUrl' in (initialData || {}) && (initialData as ApiContractor).profileImageUrl ? '' : undefined,
         };
 
         const resultAction = await dispatch(

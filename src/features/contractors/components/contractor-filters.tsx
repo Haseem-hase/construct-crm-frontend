@@ -3,6 +3,7 @@ import { Input } from '@/src/components/ui/input';
 import { Select } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
 import { Search } from '@/src/components/ui/icons';
+import { ViewMode, ViewModeToggle } from '@/src/components/ui/view-mode-toggle';
 
 interface ContractorFiltersProps {
   searchQuery: string;
@@ -13,6 +14,8 @@ interface ContractorFiltersProps {
   onCityChange: (value: string) => void;
   availableCities: string[];
   onReset: () => void;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
 export function ContractorFilters({
@@ -24,6 +27,8 @@ export function ContractorFilters({
   onCityChange,
   availableCities,
   onReset,
+  viewMode,
+  onViewModeChange,
 }: ContractorFiltersProps) {
   const statusOptions = [
     { value: 'all', label: 'All Statuses' },
@@ -69,6 +74,7 @@ export function ContractorFilters({
       <Button variant="outline" onClick={onReset} className="w-full sm:w-auto shrink-0">
         Reset
       </Button>
+      <ViewModeToggle value={viewMode} onChange={onViewModeChange} />
     </div>
   );
 }

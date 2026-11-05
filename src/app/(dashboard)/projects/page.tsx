@@ -4,10 +4,12 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ProjectPageHeader } from '@/src/features/projects/components/project-page-header';
 import { ProjectFilters } from '@/src/features/projects/components/project-filters';
 import { ProjectTable } from '@/src/features/projects/components/project-table';
+import { ProjectGrid } from '@/src/features/projects/components/project-grid';
 import { Project, ProjectStatus } from '@/src/features/projects/types/project.types';
 import { projectsApi } from '@/src/features/projects/api/projects.api';
 import { Pagination } from '@/src/components/ui/pagination';
 import { useAuth } from '@/src/features/auth/context/use-auth';
+import { useViewMode } from '@/src/hooks/use-view-mode';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -18,6 +20,7 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'ALL'>('ALL');
   const [customerFilter, setCustomerFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useViewMode();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -25,7 +28,7 @@ export default function ProjectsPage() {
     setLoading(true); setLoadError('');
     try {
       const rows = await projectsApi.list();
-      setProjects(rows.map((p) => { const primary = p.projectCustomers?.find((r) => r.isPrimary) || p.projectCustomers?.[0]; return { id: p.id, projectCode: p.projectCode, name: p.name, customerId: primary?.customerId ?? '', customerName: primary?.customer?.name ?? '—', organizationName: p.organization?.name, status: ({ PLANNING: 'Planning', ACTIVE: 'Active', COMPLETED: 'Completed', ON_HOLD: 'On Hold', CANCELLED: 'Cancelled' } as const)[p.status], progress: p.progress, startDate: p.plannedStartDate ?? '', plannedEndDate: p.plannedEndDate ?? '', description: p.description ?? undefined, budget: p.budget ?? undefined, createdAt: p.createdAt }; }));
+      setProjects(rows.map((p) => { const primary = p.projectCustomers?.find((r) => r.isPrimary) || p.projectCustomers?.[0]; const cover = p.images?.find((image) => image.isCover) || p.images?.[0]; return { id: p.id, projectCode: p.projectCode, name: p.name, customerId: primary?.customerId ?? '', customerName: primary?.customer?.name ?? '—', organizationName: p.organization?.name, status: ({ PLANNING: 'Planning', ACTIVE: 'Active', COMPLETED: 'Completed', ON_HOLD: 'On Hold', CANCELLED: 'Cancelled' } as const)[p.status], progress: p.progress, startDate: p.plannedStartDate ?? '', plannedEndDate: p.plannedEndDate ?? '', description: p.description ?? undefined, budget: p.budget ?? undefined, imageUrl: cover?.imageUrl || p.imageUrl || undefined, createdAt: p.createdAt }; }));
     } catch (error: any) { setLoadError(error?.response?.data?.message || 'Unable to load projects.'); }
     finally { setLoading(false); }
   };
@@ -106,17 +109,19 @@ export default function ProjectsPage() {
         customerFilter={customerFilter}
         onCustomerFilterChange={handleCustomerFilterChange}
         onReset={handleReset}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
       {loading && <p className="py-8 text-center text-sm text-neutral-500">Loading projects…</p>}
       {loadError && <div role="alert" className="my-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{loadError} <button className="ml-2 underline" onClick={() => void loadProjects()}>Retry</button></div>}
 
-      {!loading && !loadError && <ProjectTable
+      {!loading && !loadError && (viewMode === 'list' ? <ProjectTable
         projects={paginatedProjects}
         onClearFilters={handleReset}
         currentPage={validCurrentPage}
         itemsPerPage={ITEMS_PER_PAGE}
         readOnly={readOnly}
-      />}
+      /> : <ProjectGrid projects={paginatedProjects} onClearFilters={handleReset} readOnly={readOnly} />)}
 
       {/* Pagination UI */}
       {filteredProjects.length > 0 && (

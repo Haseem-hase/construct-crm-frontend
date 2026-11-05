@@ -7,6 +7,8 @@ import { Labour } from '@/src/features/labour/types/labour.types';
 import { LabourPageHeader } from '@/src/features/labour/components/labour-page-header';
 import { LabourFilters } from '@/src/features/labour/components/labour-filters';
 import { LabourTable } from '@/src/features/labour/components/labour-table';
+import { LabourGrid } from '@/src/features/labour/components/labour-grid';
+import { useViewMode } from '@/src/hooks/use-view-mode';
 import { useAuth } from '@/src/features/auth/context/use-auth';
 
 const ITEMS_PER_PAGE = 10;
@@ -19,6 +21,7 @@ export default function LabourPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useViewMode();
   const [labourRows, setLabourRows] = useState<Labour[]>([]);
   const [professions, setProfessions] = useState<LookupItem[]>([]);
   const [loadError, setLoadError] = useState('');
@@ -99,18 +102,20 @@ export default function LabourPage() {
         availableCities={availableCities}
         professions={professions}
         onReset={handleReset}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
       {loading && <p className="py-8 text-center text-sm text-neutral-500">Loading labour…</p>}
       {loadError && <div role="alert" className="my-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{loadError} <button className="ml-2 underline" onClick={() => void load()}>Retry</button></div>}
 
-      {!loading && !loadError && <LabourTable
+      {!loading && !loadError && (viewMode === 'list' ? <LabourTable
         labourData={currentItems}
         currentPage={currentPage}
         totalPages={totalPages}
         itemsPerPage={ITEMS_PER_PAGE}
         onPageChange={setCurrentPage}
         readOnly={readOnly}
-      />}
+      /> : <LabourGrid labourData={currentItems} currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} readOnly={readOnly} />)}
     </div>
   );
 }

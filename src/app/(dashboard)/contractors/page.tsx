@@ -11,6 +11,8 @@ import {
 import { ContractorPageHeader } from '@/src/features/contractors/components/contractor-page-header';
 import { ContractorFilters } from '@/src/features/contractors/components/contractor-filters';
 import { ContractorTable } from '@/src/features/contractors/components/contractor-table';
+import { ContractorGrid } from '@/src/features/contractors/components/contractor-grid';
+import { useViewMode } from '@/src/hooks/use-view-mode';
 import { Button } from '@/src/components/ui/button';
 import { useAuth } from '@/src/features/auth/context/use-auth';
 
@@ -28,6 +30,7 @@ export default function ContractorsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useViewMode();
 
   useEffect(() => {
     if (status === 'idle') {
@@ -111,6 +114,8 @@ export default function ContractorsPage() {
         }}
         availableCities={availableCities}
         onReset={handleReset}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       {status === 'loading' || status === 'idle' ? (
@@ -150,14 +155,14 @@ export default function ContractorsPage() {
           </Button>
         </div>
       ) : (
-        <ContractorTable
+        viewMode === 'list' ? <ContractorTable
           contractors={currentItems}
           currentPage={currentPage}
           totalPages={totalPages}
           itemsPerPage={ITEMS_PER_PAGE}
           onPageChange={setCurrentPage}
           readOnly={readOnly}
-        />
+        /> : <ContractorGrid contractors={currentItems} currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} readOnly={readOnly} />
       )}
     </div>
   );
