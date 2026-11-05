@@ -17,13 +17,23 @@ export const contractorsApi = {
     return response.data;
   },
 
-  createContractor: async (payload: CreateContractorRequest): Promise<GetContractorResponse> => {
-    const response = await apiClient.post<GetContractorResponse>('/contractors', payload);
+  createContractor: async (payload: CreateContractorRequest, image?: File): Promise<GetContractorResponse> => {
+    const response = await apiClient.post<GetContractorResponse>('/contractors', image ? toMultipart(payload, image) : payload);
     return response.data;
   },
 
-  updateContractor: async (id: string, payload: UpdateContractorRequest): Promise<GetContractorResponse> => {
-    const response = await apiClient.patch<GetContractorResponse>(`/contractors/${id}`, payload);
+  updateContractor: async (id: string, payload: UpdateContractorRequest, image?: File): Promise<GetContractorResponse> => {
+    const response = await apiClient.patch<GetContractorResponse>(`/contractors/${id}`, image ? toMultipart(payload, image) : payload);
     return response.data;
   },
 };
+
+function toMultipart(payload: CreateContractorRequest | UpdateContractorRequest, image: File) {
+  const formData = new FormData();
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value === null) formData.append(key, '');
+    else if (value !== undefined) formData.append(key, String(value));
+  });
+  formData.append('image', image);
+  return formData;
+}

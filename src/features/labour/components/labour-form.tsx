@@ -13,6 +13,7 @@ import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
 import { Labour } from '../types/labour.types';
 import { labourApi } from '../api/labour.api';
 import { labourLookupsApi, LookupItem } from '../api/labour-lookups.api';
+import { projectImageUrl } from '@/src/features/projects/utils/project-image';
 
 interface LabourFormProps {
   mode?: 'create' | 'edit';
@@ -32,6 +33,7 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
 
   // Card 2 — Profile Image
   const [profileImageUrl, setProfileImageUrl] = useState(initialData?.profileImageUrl || '');
+  const [profileImageFile, setProfileImageFile] = useState<File>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
 
@@ -68,10 +70,17 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
     if (!file) return;
 
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      alert('Invalid file type. Only JPEG, PNG, and WEBP are allowed.');
+      setFormError('Choose a JPEG, PNG, or WebP image.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setFormError('The photo must be 5 MB or smaller.');
       return;
     }
 
+    setFormError('');
+    if (profileImageUrl.startsWith('blob:')) URL.revokeObjectURL(profileImageUrl);
+    setProfileImageFile(file);
     const imageUrl = URL.createObjectURL(file);
     setProfileImageUrl(imageUrl);
 
@@ -81,7 +90,9 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
   };
 
   const handleRemovePhoto = () => {
+    if (profileImageUrl.startsWith('blob:')) URL.revokeObjectURL(profileImageUrl);
     setProfileImageUrl('');
+    setProfileImageFile(undefined);
     setIsRemoveDialogOpen(false);
   };
 
@@ -124,7 +135,7 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
       phone: phone.trim(),
       email: email.trim() || undefined,
       dateOfBirth: dateOfBirth || undefined,
-      profileImageUrl: profileImageUrl || undefined,
+      profileImageUrl: profileImageUrl || (initialData?.profileImageUrl ? '' : undefined),
       country: country.trim(),
       city: city.trim(),
       address: address.trim() || undefined,
@@ -133,13 +144,8 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
       joiningDate: joiningDate ? new Date(joiningDate).toISOString() : undefined,
       notes: notes.trim() || undefined,
     };
-    if (profileImageUrl.startsWith('blob:')) {
-      setFormError('Profile photo upload is not available in the backend yet. Remove the local preview or use a hosted image URL.');
-      setIsSubmitting(false);
-      return;
-    }
-    if (mode === 'edit' && initialData?.id) await labourApi.update(initialData.id, payload);
-    else await labourApi.create(payload);
+    if (mode === 'edit' && initialData?.id) await labourApi.update(initialData.id, payload, profileImageFile);
+    else await labourApi.create(payload, profileImageFile);
 
     if (mode === 'edit' && initialData?.id) {
       router.push(`/labour/${initialData.id}`);
@@ -226,7 +232,7 @@ export function LabourForm({ mode = 'create', initialData }: LabourFormProps) {
               {profileImageUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img 
-                  src={profileImageUrl} 
+                  src={profileImageUrl.startsWith('blob:') ? profileImageUrl : projectImageUrl(profileImageUrl) || profileImageUrl}
                   alt="Profile Preview" 
                   className="w-full h-full object-cover"
                 />

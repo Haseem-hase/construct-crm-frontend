@@ -9,6 +9,7 @@ import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Select } from '@/src/components/ui/select';
 import { FormField } from '@/src/components/ui/form-field';
+import { User } from '@/src/components/ui/icons';
 import { SuccessAlert } from '@/src/components/ui/success-alert';
 import {
   Contractor,
@@ -18,6 +19,7 @@ import {
   UpdateContractorRequest,
 } from '../types/contractor.types';
 import { SAUDI_CITIES } from '../data/contractor-options';
+import { projectImageUrl } from '@/src/features/projects/utils/project-image';
 import {
   createContractor,
   updateContractor,
@@ -59,6 +61,9 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
   const [status, setStatus] = useState<ApiContractorStatus>(
     (initialData?.status as ApiContractorStatus) || 'PENDING'
   );
+  const [profileImageUrl, setProfileImageUrl] = useState(('profileImageUrl' in (initialData || {}) ? (initialData as ApiContractor).profileImageUrl : '') || '');
+  const [profileImageFile, setProfileImageFile] = useState<File>();
+  const profileImageInputRef = useRef<HTMLInputElement>(null);
 
   // Location
   const [country, setCountry] = useState(initialData?.country || 'Saudi Arabia');
@@ -96,6 +101,8 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
       setLicenseNumber(initialData.licenseNumber || '');
       setLicenseExpiryDate(initialData.licenseExpiryDate?.split('T')[0] || '');
       setNotes('notes' in initialData ? (initialData as ApiContractor).notes || '' : '');
+      setProfileImageUrl(('profileImageUrl' in initialData ? (initialData as ApiContractor).profileImageUrl : '') || '');
+      setProfileImageFile(undefined);
     }
   }, [initialData]);
 
@@ -214,7 +221,7 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
           ...(notes.trim() ? { notes: notes.trim() } : {}),
         };
 
-        const resultAction = await dispatch(createContractor(payload));
+        const resultAction = await dispatch(createContractor({ ...payload, image: profileImageFile }));
 
         if (createContractor.fulfilled.match(resultAction)) {
           const createdContractor = resultAction.payload.contractor;
@@ -247,10 +254,11 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
           licenseExpiryDate: licenseExpiryDate ? new Date(licenseExpiryDate).toISOString() : null,
           status,
           notes: notes.trim(),
+          profileImageUrl: !profileImageUrl && initialData?.profileImageUrl ? '' : undefined,
         };
 
         const resultAction = await dispatch(
-          updateContractor({ id: initialData.id, payload })
+          updateContractor({ id: initialData.id, payload, image: profileImageFile })
         );
 
         if (updateContractor.fulfilled.match(resultAction)) {
@@ -391,6 +399,37 @@ export function ContractorForm({ mode, initialData }: ContractorFormProps) {
                 />
               </FormField>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Profile Photo</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-5">
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
+                {profileImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profileImageUrl.startsWith('blob:') ? profileImageUrl : projectImageUrl(profileImageUrl) || profileImageUrl} alt="Contractor profile" className="h-full w-full object-cover" />
+                ) : <User className="h-10 w-10 text-neutral-400" />}
+              </div>
+              <div className="flex gap-2">
+                <input ref={profileImageInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+                    setErrors((current) => ({ ...current, profileImage: 'Choose a JPEG, PNG, or WebP image no larger than 5 MB.' }));
+                    event.target.value = '';
+                    return;
+                  }
+                  setErrors((current) => { const next = { ...current }; delete next.profileImage; return next; });
+                  setProfileImageFile(file);
+                  setProfileImageUrl(URL.createObjectURL(file));
+                }} />
+                <Button type="button" variant="outline" onClick={() => profileImageInputRef.current?.click()} disabled={isSubmitting}>{profileImageUrl ? 'Change photo' : 'Add photo'}</Button>
+                {profileImageUrl && <Button type="button" variant="ghost" className="text-red-600" onClick={() => { if (profileImageUrl.startsWith('blob:')) URL.revokeObjectURL(profileImageUrl); setProfileImageUrl(''); setProfileImageFile(undefined); }} disabled={isSubmitting}>Remove</Button>}
+              </div>
+            </div>
+            {errors.profileImage && <p className="mt-2 text-sm text-red-600">{errors.profileImage}</p>}
           </CardContent>
         </Card>
 

@@ -6,6 +6,15 @@ export type LabourPayload = Partial<Omit<ApiLabour, 'id' | 'profession'>> & { fu
 export const labourApi = {
   async list() { return (await apiClient.get<ApiEnvelope<{ labours: ApiLabour[] }>>('/labours')).data.data.labours; },
   async get(id: string) { return (await apiClient.get<ApiEnvelope<{ labour: ApiLabour }>>(`/labours/${id}`)).data.data.labour; },
-  async create(payload: LabourPayload) { return (await apiClient.post<ApiEnvelope<{ labour: ApiLabour }>>('/labours', payload)).data.data.labour; },
-  async update(id: string, payload: Partial<LabourPayload>) { return (await apiClient.patch<ApiEnvelope<{ labour: ApiLabour }>>(`/labours/${id}`, payload)).data.data.labour; },
+  async create(payload: LabourPayload, image?: File) { return (await apiClient.post<ApiEnvelope<{ labour: ApiLabour }>>('/labours', image ? toMultipart(payload, image) : payload)).data.data.labour; },
+  async update(id: string, payload: Partial<LabourPayload>, image?: File) { return (await apiClient.patch<ApiEnvelope<{ labour: ApiLabour }>>(`/labours/${id}`, image ? toMultipart(payload, image) : payload)).data.data.labour; },
 };
+
+function toMultipart(payload: LabourPayload | Partial<LabourPayload>, image: File) {
+  const formData = new FormData();
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) formData.append(key, String(value));
+  });
+  formData.append('image', image);
+  return formData;
+}

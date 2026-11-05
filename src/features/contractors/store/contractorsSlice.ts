@@ -68,9 +68,10 @@ export const fetchContractorById = createAsyncThunk(
 
 export const createContractor = createAsyncThunk(
   'contractors/createContractor',
-  async (payload: CreateContractorRequest, { rejectWithValue }) => {
+  async (payload: CreateContractorRequest & { image?: File }, { rejectWithValue }) => {
     try {
-      const response = await contractorsApi.createContractor(payload);
+      const { image, ...fields } = payload;
+      const response = await contractorsApi.createContractor(fields, image);
       return { contractor: response.data.contractor, message: response.message };
     } catch (err: any) {
       const errorMessage =
@@ -85,11 +86,11 @@ export const createContractor = createAsyncThunk(
 export const updateContractor = createAsyncThunk(
   'contractors/updateContractor',
   async (
-    { id, payload }: { id: string; payload: UpdateContractorRequest },
+    { id, payload, image }: { id: string; payload: UpdateContractorRequest; image?: File },
     { rejectWithValue }
   ) => {
     try {
-      const response = await contractorsApi.updateContractor(id, payload);
+      const response = await contractorsApi.updateContractor(id, payload, image);
       return { contractor: response.data.contractor, message: response.message };
     } catch (err: any) {
       const errorMessage =
