@@ -3,7 +3,7 @@ import { UpcomingLabourAssignment } from '../types/dashboard.types';
 
 export function UpcomingLabourAssignments({ data }: { data: UpcomingLabourAssignment[] }) {
   return (
-    <div className="bg-white rounded-lg border border-neutral-200/60 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.02)] overflow-hidden">
+    <div className="bg-white rounded-sm border border-neutral-200/60 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.02)] overflow-hidden">
       <div className="px-6 py-5 border-b border-neutral-200/60">
         <h3 className="text-base font-semibold text-neutral-900 tracking-tight">Upcoming Labour Assignments</h3>
       </div>

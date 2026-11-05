@@ -7,6 +7,7 @@ import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Pagination } from '@/src/components/ui/pagination';
 import { User } from '@/src/components/ui/icons';
+import { projectImageUrl } from '@/src/features/projects/utils/project-image';
 
 interface ContractorTableProps {
   contractors: ApiContractor[];
@@ -102,7 +103,7 @@ export function ContractorTable({
                         {contractor.profileImageUrl ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
                           <img
-                            src={contractor.profileImageUrl}
+                            src={projectImageUrl(contractor.profileImageUrl) || contractor.profileImageUrl}
                             alt={`${contractor.fullName} avatar`}
                             className="w-full h-full object-cover"
                           />

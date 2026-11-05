@@ -3,6 +3,7 @@ import { Input } from '@/src/components/ui/input';
 import { Select } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
 import { Search } from '@/src/components/ui/icons';
+import { ViewMode, ViewModeToggle } from '@/src/components/ui/view-mode-toggle';
 
 interface LabourFiltersProps {
   searchQuery: string;
@@ -16,6 +17,8 @@ interface LabourFiltersProps {
   availableCities: string[];
   professions: { id: string; name: string }[];
   onReset: () => void;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
 export function LabourFilters({
@@ -29,7 +32,9 @@ export function LabourFilters({
   onCityChange,
   availableCities,
   professions,
-  onReset
+  onReset,
+  viewMode,
+  onViewModeChange,
 }: LabourFiltersProps) {
   const professionOptions = [ { value: 'all', label: 'All Professions' }, ...professions.map((p) => ({ value: p.id, label: p.name })) ];
 
@@ -81,6 +86,7 @@ export function LabourFilters({
       <Button variant="outline" onClick={onReset} className="w-full sm:w-auto shrink-0">
         Reset
       </Button>
+      <ViewModeToggle value={viewMode} onChange={onViewModeChange} />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import React, { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/src/components/ui/button';
 import { EmptyState } from '@/src/components/ui/empty-state';
 import { SuccessAlert } from '@/src/components/ui/success-alert';
@@ -20,6 +21,7 @@ import { assignmentsApi, ApiContractorAssignment } from '@/src/features/assignme
 import { labourAssignmentsApi, ApiLabourAssignment } from '@/src/features/labour-assignments/api/labour-assignments.api';
 import { projectImageUrl } from '@/src/features/projects/utils/project-image';
 import { ProjectImageGallery } from '@/src/features/projects/components/project-image-gallery';
+import { useAuth } from '@/src/features/auth/context/use-auth';
 
 interface ProjectDetailsPageProps { params: Promise<{ id: string }> }
 const fromApiStatus: Record<ApiProjectStatus, ProjectStatus> = { PLANNING: 'Planning', ACTIVE: 'Active', ON_HOLD: 'On Hold', COMPLETED: 'Completed', CANCELLED: 'Cancelled' };
@@ -27,6 +29,9 @@ const toApiStatus: Record<ProjectStatus, ApiProjectStatus> = { Planning: 'PLANNI
 
 export default function ProjectDetailsPage({ params }: ProjectDetailsPageProps) {
   const { id } = use(params);
+  const router = useRouter();
+  const { user } = useAuth();
+  const readOnly = user?.systemRole === 'SUPER_ADMIN';
   const dispatch = useAppDispatch();
   const apiProject = useAppSelector(selectSelectedProject);
   const detailStatus = useAppSelector(selectProjectDetailStatus);
@@ -108,7 +113,7 @@ export default function ProjectDetailsPage({ params }: ProjectDetailsPageProps) 
         </div>
         {relationshipsError && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{relationshipsError} <button className="ml-2 underline" onClick={() => apiProject && void loadRelationships(apiProject.id)}>Retry</button></div>}
         {relationshipsLoading && <p className="text-center text-sm text-neutral-500">Loading project assignments…</p>}
-        {!relationshipsLoading && !relationshipsError && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><ProjectContractorOverview assignments={contractorAssignments} /><ProjectLabourOverview assignments={labourAssignments} /></div>}
+        {!relationshipsLoading && !relationshipsError && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><ProjectContractorOverview assignments={contractorAssignments} onAssign={readOnly ? undefined : () => router.push(`/assignments/create?projectId=${encodeURIComponent(project.id)}`)} /><ProjectLabourOverview assignments={labourAssignments} onAssign={readOnly ? undefined : () => router.push(`/labour-assignments/create?projectId=${encodeURIComponent(project.id)}`)} /></div>}
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import { fetchCustomers, updateCustomer, selectCustomers, selectCustomersListSta
 import { Button } from '@/src/components/ui/button';
 import { SuccessAlert } from '@/src/components/ui/success-alert';
 import { useAuth } from '@/src/features/auth/context/use-auth';
+import { useViewMode } from '@/src/hooks/use-view-mode';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -26,6 +27,7 @@ export default function CustomersPage() {
   const [typeFilter, setTypeFilter] = useState<CustomerType | 'ALL'>('ALL');
   const [statusFilter, setStatusFilter] = useState<CustomerStatus | 'ALL'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useViewMode();
 
   useEffect(() => {
     if (status === 'idle') {
@@ -190,6 +192,8 @@ export default function CustomersPage() {
             statusFilter={statusFilter}
             onStatusFilterChange={handleStatusFilterChange}
             onReset={handleReset}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
           />
           
           <CustomerTable 
@@ -199,7 +203,8 @@ export default function CustomersPage() {
             onUpdateStatus={handleUpdateStatus}
             currentPage={validCurrentPage}
             itemsPerPage={ITEMS_PER_PAGE}
-        readOnly={readOnly}
+            readOnly={readOnly}
+            viewMode={viewMode}
           />
 
           {/* Pagination UI */}

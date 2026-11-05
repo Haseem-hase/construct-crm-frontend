@@ -34,7 +34,7 @@ export function PageHeader({ title, description, subtitle, badges, avatar, actio
           )}
           <div className="flex flex-col gap-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-neutral-900 truncate">
+              <h1 className="text-2xl md:text-2xl font-semibold tracking-tight text-neutral-900 truncate">
                 {title}
               </h1>
               {subtitle && (

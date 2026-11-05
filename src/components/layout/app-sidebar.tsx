@@ -17,8 +17,8 @@ type NavItem = {
 };
 
 const sharedNavigation: NavItem[] = [
+    { name: 'Projects', href: '/projects', icon: FolderOpen },
   { name: 'Customers', href: '/customers', icon: Users },
-  { name: 'Projects', href: '/projects', icon: FolderOpen },
   { name: 'Contractors', href: '/contractors', icon: Hammer },
   { name: 'Labour', href: '/labour', icon: HardHat },
   { 

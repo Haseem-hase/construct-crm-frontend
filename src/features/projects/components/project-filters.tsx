@@ -3,6 +3,7 @@ import { Input } from '@/src/components/ui/input';
 import { Select } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
 import { Search } from '@/src/components/ui/icons';
+import { ViewMode, ViewModeToggle } from '@/src/components/ui/view-mode-toggle';
 import { ProjectStatus } from '../types/project.types';
 import { Project } from '../types/project.types';
 
@@ -15,6 +16,8 @@ interface ProjectFiltersProps {
   customerFilter: string;
   onCustomerFilterChange: (value: string) => void;
   onReset: () => void;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
 const statusOptions = [
@@ -34,7 +37,9 @@ export function ProjectFilters({
   onStatusFilterChange,
   customerFilter,
   onCustomerFilterChange,
-  onReset
+  onReset,
+  viewMode,
+  onViewModeChange,
 }: ProjectFiltersProps) {
   // Extract unique customers
   const uniqueCustomers = Array.from(new Set(projects.map(p => p.customerName))).map(name => ({
@@ -79,6 +84,7 @@ export function ProjectFilters({
           Reset
         </Button>
       </div>
+      <ViewModeToggle value={viewMode} onChange={onViewModeChange} />
     </div>
   );
 }

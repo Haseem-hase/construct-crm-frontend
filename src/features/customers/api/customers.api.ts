@@ -22,13 +22,13 @@ export const customersApi = {
     return response.data;
   },
 
-  createCustomer: async (payload: CreateCustomerRequest): Promise<GetCustomerResponse> => {
-    const response = await apiClient.post<GetCustomerResponse>('/customers', payload);
+  createCustomer: async (payload: CreateCustomerRequest, image?: File): Promise<GetCustomerResponse> => {
+    const response = await apiClient.post<GetCustomerResponse>('/customers', image ? toMultipart(payload, image) : payload);
     return response.data;
   },
 
-  updateCustomer: async (id: string, payload: UpdateCustomerRequest): Promise<GetCustomerResponse> => {
-    const response = await apiClient.patch<GetCustomerResponse>(`/customers/${id}`, payload);
+  updateCustomer: async (id: string, payload: UpdateCustomerRequest, image?: File): Promise<GetCustomerResponse> => {
+    const response = await apiClient.patch<GetCustomerResponse>(`/customers/${id}`, image ? toMultipart(payload, image) : payload);
     return response.data;
   },
 
@@ -37,3 +37,13 @@ export const customersApi = {
     return response.data;
   },
 };
+
+function toMultipart(payload: CreateCustomerRequest | UpdateCustomerRequest, image: File) {
+  const formData = new FormData();
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value === null) formData.append(key, '');
+    else if (value !== undefined) formData.append(key, String(value));
+  });
+  formData.append('image', image);
+  return formData;
+}

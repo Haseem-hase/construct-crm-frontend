@@ -12,6 +12,7 @@ import { Button } from '@/src/components/ui/button';
 import { User } from '@/src/components/ui/icons';
 import { PageHeader } from '@/src/components/ui/page-header';
 import { ContractorStatusActions } from './contractor-status-actions';
+import { projectImageUrl } from '@/src/features/projects/utils/project-image';
 
 interface ContractorDetailsHeaderProps {
   contractor: ApiContractor;
@@ -70,7 +71,7 @@ export function ContractorDetailsHeader({ contractor, onStatusSuccess }: Contrac
             {contractor.profileImageUrl ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
-                src={contractor.profileImageUrl}
+                src={projectImageUrl(contractor.profileImageUrl) || contractor.profileImageUrl}
                 alt={`${contractor.fullName} profile`}
                 className="w-full h-full object-cover"
               />

@@ -7,6 +7,7 @@ import { User } from '@/src/components/ui/icons';
 import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
 import { LabourStatusActions } from './labour-status-actions';
 import { PageHeader } from '@/src/components/ui/page-header';
+import { projectImageUrl } from '@/src/features/projects/utils/project-image';
 
 interface LabourDetailsHeaderProps {
   labour: Labour;
@@ -69,7 +70,7 @@ export function LabourDetailsHeader({ labour, onUpdate }: LabourDetailsHeaderPro
               {labour.profileImageUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img 
-                  src={labour.profileImageUrl} 
+                  src={labour.profileImageUrl?.startsWith('blob:') ? labour.profileImageUrl : projectImageUrl(labour.profileImageUrl) || labour.profileImageUrl}
                   alt={`${labour.fullName} profile`} 
                   className="w-full h-full object-cover"
                 />

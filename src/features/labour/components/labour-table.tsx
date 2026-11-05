@@ -6,6 +6,7 @@ import { Badge } from '@/src/components/ui/badge';
 import { Button } from '@/src/components/ui/button';
 import { Card } from '@/src/components/ui/card';
 import { Pagination } from '@/src/components/ui/pagination';
+import { projectImageUrl } from '@/src/features/projects/utils/project-image';
 
 interface LabourTableProps {
   labourData: Labour[];
@@ -85,7 +86,7 @@ export function LabourTable({
                       {labour.profileImageUrl ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img 
-                          src={labour.profileImageUrl} 
+                          src={projectImageUrl(labour.profileImageUrl) || labour.profileImageUrl}
                           alt={labour.fullName} 
                           className="w-10 h-10 rounded-full object-cover shrink-0 bg-neutral-100"
                         />
