@@ -16,9 +16,11 @@ import { LabourAssignment } from '../types/labour-assignment.types';
 interface LabourAssignmentFormProps {
   mode?: 'create' | 'edit';
   initialData?: LabourAssignment;
+  initialProjectId?: string;
+  returnTo?: string;
 }
 
-export function LabourAssignmentForm({ mode = 'create', initialData }: LabourAssignmentFormProps) {
+export function LabourAssignmentForm({ mode = 'create', initialData, initialProjectId, returnTo = '/labour-assignments' }: LabourAssignmentFormProps) {
   const router = useRouter();
 
   // Assignment section
@@ -39,6 +41,11 @@ export function LabourAssignmentForm({ mode = 'create', initialData }: LabourAss
   const [existingAssignments, setExistingAssignments] = useState<ApiLabourAssignment[]>([]);
   const [formError, setFormError] = useState('');
   useEffect(() => { Promise.all([labourApi.list(), assignmentsApi.list(), labourAssignmentsApi.list()]).then(([l, a, la]) => { setLabours(l); setParentAssignments(a); setExistingAssignments(la); }).catch((error: any) => setFormError(error?.response?.data?.message || 'Unable to load assignment options.')); }, []);
+  useEffect(() => {
+    if (!initialProjectId || contractorProjectAssignmentId) return;
+    const matchingAssignments = parentAssignments.filter((assignment) => assignment.projectId === initialProjectId && assignment.status === 'ACTIVE');
+    if (matchingAssignments.length === 1) setContractorProjectAssignmentId(matchingAssignments[0].id);
+  }, [initialProjectId, parentAssignments, contractorProjectAssignmentId]);
 
   // Derived Options
   const labourOptions = useMemo(() => {
@@ -52,12 +59,12 @@ export function LabourAssignmentForm({ mode = 'create', initialData }: LabourAss
 
   const assignmentOptions = useMemo(() => {
     return parentAssignments
-      .filter((a) => a.status === 'ACTIVE')
+      .filter((a) => a.status === 'ACTIVE' && (!initialProjectId || a.projectId === initialProjectId))
       .map((a) => ({
         value: a.id,
         label: `${a.contractor.contractorCode} ${a.contractor.fullName} | ${a.project.projectCode} ${a.project.name}`,
       }));
-  }, [parentAssignments]);
+  }, [parentAssignments, initialProjectId]);
 
   const selectedParentAssignment = useMemo(() => {
     return parentAssignments.find((a) => a.id === contractorProjectAssignmentId);
@@ -138,7 +145,7 @@ export function LabourAssignmentForm({ mode = 'create', initialData }: LabourAss
     if (mode === 'edit' && initialData) {
       router.push(`/labour-assignments/${initialData.id}`);
     } else {
-      router.push('/labour-assignments');
+      router.push(returnTo);
     }
     } catch (error: any) { setFormError(error?.response?.data?.message || 'Unable to save labour assignment. Please try again.'); }
     finally { setIsSubmitting(false); }
@@ -257,7 +264,7 @@ export function LabourAssignmentForm({ mode = 'create', initialData }: LabourAss
               if (mode === 'edit' && initialData) {
                 router.push(`/labour-assignments/${initialData.id}`);
               } else {
-                router.push('/labour-assignments');
+                router.push(returnTo);
               }
             }}
             disabled={isSubmitting}

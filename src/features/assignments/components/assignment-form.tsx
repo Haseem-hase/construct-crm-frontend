@@ -18,13 +18,15 @@ import { assignmentLookupsApi } from '../api/assignment-lookups.api';
 interface AssignmentFormProps {
   mode?: 'create' | 'edit';
   initialData?: Assignment;
+  initialProjectId?: string;
+  returnTo?: string;
 }
 
-export function AssignmentForm({ mode = 'create', initialData }: AssignmentFormProps) {
+export function AssignmentForm({ mode = 'create', initialData, initialProjectId, returnTo = '/assignments' }: AssignmentFormProps) {
   const router = useRouter();
 
   // Assignment section
-  const [projectId, setProjectId] = useState(initialData?.projectId || '');
+  const [projectId, setProjectId] = useState(initialData?.projectId || initialProjectId || '');
   const [contractorId, setContractorId] = useState(initialData?.contractorId || '');
 
   // Responsibilities
@@ -117,7 +119,7 @@ export function AssignmentForm({ mode = 'create', initialData }: AssignmentFormP
     if (mode === 'edit' && initialData) {
       router.push(`/assignments/${initialData.id}`);
     } else {
-      router.push('/assignments');
+      router.push(returnTo);
     }
     } catch (error: any) { setFormError(error?.response?.data?.message || 'Unable to save assignment. Please try again.'); }
     finally { setIsSubmitting(false); }
@@ -261,7 +263,7 @@ export function AssignmentForm({ mode = 'create', initialData }: AssignmentFormP
               if (mode === 'edit' && initialData) {
                 router.push(`/assignments/${initialData.id}`);
               } else {
-                router.push('/assignments');
+                router.push(returnTo);
               }
             }}
             disabled={isSubmitting}
