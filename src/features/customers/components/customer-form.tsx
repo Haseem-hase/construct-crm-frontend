@@ -9,6 +9,8 @@ import { Input } from '@/src/components/ui/input';
 import { Select } from '@/src/components/ui/select';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Button } from '@/src/components/ui/button';
+import { User } from '@/src/components/ui/icons';
+import { projectImageUrl } from '@/src/features/projects/utils/project-image';
 import { SuccessAlert } from '@/src/components/ui/success-alert';
 import { Customer, CustomerType, UpdateCustomerRequest } from '../types/customer.types';
 import { 
@@ -47,6 +49,9 @@ export function CustomerForm({ mode, initialData }: CustomerFormProps) {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [profileImageUrl, setProfileImageUrl] = useState(initialData?.profileImageUrl || '');
+  const [profileImageFile, setProfileImageFile] = useState<File>();
+  const profileImageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (allCustomers.length === 0) {
@@ -101,9 +106,15 @@ export function CustomerForm({ mode, initialData }: CustomerFormProps) {
         address: initialData.address || '',
         isActive: initialData.isActive ?? true
       });
+      setProfileImageUrl(initialData.profileImageUrl || '');
+      setProfileImageFile(undefined);
       setErrors({});
     }
   }, [initialData]);
+
+  useEffect(() => () => {
+    if (profileImageUrl.startsWith('blob:')) URL.revokeObjectURL(profileImageUrl);
+  }, [profileImageUrl]);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -174,9 +185,10 @@ export function CustomerForm({ mode, initialData }: CustomerFormProps) {
         address: formData.address.trim() || undefined,
         parentCustomerId: formData.parentCustomerId === 'no-parent' ? undefined : formData.parentCustomerId,
         isActive: formData.isActive,
+        profileImageUrl: !profileImageUrl && initialData.profileImageUrl ? '' : undefined,
       };
 
-      const action = await dispatch(updateCustomer({ id: initialData.id, payload }));
+      const action = await dispatch(updateCustomer({ id: initialData.id, payload, image: profileImageFile }));
 
       if (updateCustomer.fulfilled.match(action)) {
         setSuccessMessage(action.payload.message || 'Customer updated successfully.');
@@ -199,7 +211,7 @@ export function CustomerForm({ mode, initialData }: CustomerFormProps) {
       parentCustomerId: formData.parentCustomerId === 'no-parent' ? undefined : formData.parentCustomerId,
     };
 
-    const action = await dispatch(createCustomer(payload));
+    const action = await dispatch(createCustomer({ ...payload, image: profileImageFile }));
 
     if (createCustomer.fulfilled.match(action)) {
       setSuccessMessage(action.payload.message || "The customer was successfully created.");
@@ -256,6 +268,38 @@ export function CustomerForm({ mode, initialData }: CustomerFormProps) {
                 />
               </FormField>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Customer Photo</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-5">
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
+                {profileImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profileImageUrl.startsWith('blob:') ? profileImageUrl : projectImageUrl(profileImageUrl) || profileImageUrl} alt="Customer profile" className="h-full w-full object-cover" />
+                ) : <User className="h-10 w-10 text-neutral-400" />}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <input ref={profileImageInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={isSubmitting} onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+                    setErrors((current) => ({ ...current, profileImage: 'Choose a JPEG, PNG, or WebP image no larger than 5 MB.' }));
+                    event.target.value = '';
+                    return;
+                  }
+                  setErrors((current) => { const next = { ...current }; delete next.profileImage; return next; });
+                  setProfileImageFile(file);
+                  setProfileImageUrl(URL.createObjectURL(file));
+                  event.target.value = '';
+                }} />
+                <Button type="button" variant="outline" onClick={() => profileImageInputRef.current?.click()} disabled={isSubmitting}>{profileImageUrl ? 'Change photo' : 'Add photo'}</Button>
+                {profileImageUrl && <Button type="button" variant="ghost" className="text-red-600" onClick={() => { setProfileImageUrl(''); setProfileImageFile(undefined); }} disabled={isSubmitting}>Remove</Button>}
+              </div>
+            </div>
+            {errors.profileImage && <p className="mt-2 text-sm text-red-600">{errors.profileImage}</p>}
           </CardContent>
         </Card>
 

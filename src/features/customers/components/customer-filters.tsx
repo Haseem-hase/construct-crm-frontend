@@ -3,6 +3,7 @@ import { Input } from '@/src/components/ui/input';
 import { Select } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
 import { Search } from '@/src/components/ui/icons';
+import { ViewMode, ViewModeToggle } from '@/src/components/ui/view-mode-toggle';
 import { CustomerType, CustomerStatus } from '../types/customer.types';
 
 export interface CustomerFiltersProps {
@@ -13,6 +14,8 @@ export interface CustomerFiltersProps {
   statusFilter: CustomerStatus | 'ALL';
   onStatusFilterChange: (value: CustomerStatus | 'ALL') => void;
   onReset: () => void;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
 export function CustomerFilters({
@@ -22,7 +25,9 @@ export function CustomerFilters({
   onTypeFilterChange,
   statusFilter,
   onStatusFilterChange,
-  onReset
+  onReset,
+  viewMode,
+  onViewModeChange,
 }: CustomerFiltersProps) {
   const typeOptions = [
     { value: 'ALL', label: 'All Types' },
@@ -72,6 +77,7 @@ export function CustomerFilters({
       <Button variant="outline" onClick={onReset} className="w-full sm:w-auto shrink-0">
         Reset
       </Button>
+      <ViewModeToggle value={viewMode} onChange={onViewModeChange} />
     </div>
   );
 }

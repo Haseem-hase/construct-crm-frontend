@@ -8,6 +8,9 @@ import { Card } from '@/src/components/ui/card';
 import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
 import { SuccessAlert } from '@/src/components/ui/success-alert';
 import { CustomerStatus } from '../types/customer.types';
+import { User } from '@/src/components/ui/icons';
+import { projectImageUrl } from '@/src/features/projects/utils/project-image';
+import { ViewMode } from '@/src/components/ui/view-mode-toggle';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { 
   deleteCustomer, 
@@ -24,6 +27,7 @@ interface CustomerTableProps {
   currentPage?: number;
   itemsPerPage?: number;
   readOnly?: boolean;
+  viewMode?: ViewMode;
 }
 
 function formatDate(isoString: string) {
@@ -39,7 +43,7 @@ function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
-export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdateStatus, currentPage = 1, itemsPerPage = 10, readOnly = false }: CustomerTableProps) {
+export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdateStatus, currentPage = 1, itemsPerPage = 10, readOnly = false, viewMode = 'list' }: CustomerTableProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [targetCustomer, setTargetCustomer] = React.useState<Customer | null>(null);
@@ -107,7 +111,49 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
   }
 
   return (
-    <Card className="w-full min-w-0">
+    <div className="w-full min-w-0">
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {customers.map((customer) => {
+            const parentName = customer.parentCustomerId ? allCustomers.find(item => item.id === customer.parentCustomerId)?.name : undefined;
+            const image = projectImageUrl(customer.profileImageUrl);
+            return (
+              <Card key={customer.id} className="overflow-hidden border-neutral-200 transition-shadow hover:shadow-md">
+                <div className="flex items-start justify-between gap-4 bg-neutral-50 p-5">
+                  <div className="flex min-w-0 items-center gap-4">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-white">
+                      {image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={image} alt={`${customer.name} profile`} className="h-full w-full object-cover" />
+                      ) : <User className="h-6 w-6 text-neutral-400" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-semibold text-neutral-900" title={customer.name}>{customer.name}</p>
+                      <p className="mt-1 font-mono text-xs text-neutral-500">{customer.customerCode}</p>
+                    </div>
+                  </div>
+                  <Badge variant={customer.isActive ? 'success' : 'neutral'}>{customer.isActive ? 'Active' : 'Inactive'}</Badge>
+                </div>
+                <div className="space-y-3 p-5 text-sm">
+                  <div className="flex justify-between gap-3"><span className="text-neutral-500">Type</span><span className="font-medium text-neutral-800">{capitalize(customer.type)}</span></div>
+                  <div className="flex justify-between gap-3"><span className="text-neutral-500">Location</span><span className="text-right font-medium text-neutral-800">{[customer.city, customer.country].filter(Boolean).join(', ') || '—'}</span></div>
+                  {parentName && <div className="flex justify-between gap-3"><span className="text-neutral-500">Parent</span><span className="max-w-[65%] truncate text-right font-medium text-neutral-800" title={parentName}>{parentName}</span></div>}
+                  {customer.organization?.name && <p className="truncate border-t border-neutral-100 pt-3 text-xs text-neutral-500" title={customer.organization.name}>{customer.organization.name}</p>}
+                  <div className="flex flex-wrap justify-end gap-1 border-t border-neutral-100 pt-3">
+                    <Button size="sm" variant="ghost" onClick={() => router.push(`/customers/${customer.id}`)}>View</Button>
+                    {!readOnly && <>
+                      <Button size="sm" variant="outline" onClick={() => router.push(`/customers/${customer.id}/edit`)}>Edit</Button>
+                      <Button size="sm" variant="ghost" className={customer.isActive ? 'text-red-600 hover:bg-red-50 hover:text-red-700' : ''} onClick={() => setTargetCustomer(customer)} disabled={isDeleting}>{customer.isActive ? 'Deactivate' : 'Activate'}</Button>
+                      <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => { dispatch(resetDeleteState()); setCustomerToDelete(customer); }} disabled={isDeleting}>Delete</Button>
+                    </>}
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+      <Card className="w-full min-w-0">
       <Table>
         <TableHeader>
           <TableRow>
@@ -139,11 +185,17 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
                   {serialNumber}
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-medium text-neutral-900">{customer.name}</span>
-                    {customer.parentCustomerId && (
-                      <span className="text-[13px] text-neutral-500 mt-0.5">Parent: {parentName}</span>
-                    )}
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
+                      {customer.profileImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={projectImageUrl(customer.profileImageUrl) || customer.profileImageUrl} alt="" className="h-full w-full object-cover" />
+                      ) : <User className="h-4 w-4 text-neutral-400" />}
+                    </div>
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate font-medium text-neutral-900">{customer.name}</span>
+                      {customer.parentCustomerId && <span className="mt-0.5 text-[13px] text-neutral-500">Parent: {parentName}</span>}
+                    </div>
                   </div>
                 </TableCell>
                 {hasOrganizationColumn && <TableCell className="text-neutral-600">{customer.organization?.name || '—'}</TableCell>}
@@ -212,6 +264,8 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
           })}
         </TableBody>
       </Table>
+      </Card>
+      )}
       <ConfirmationDialog
         open={!!targetCustomer}
         onOpenChange={(open) => !open && setTargetCustomer(null)}
@@ -250,6 +304,6 @@ export function CustomerTable({ customers, allCustomers, onClearFilters, onUpdat
         title="Customer Deleted" 
         description={successMessage} 
       />
-    </Card>
+    </div>
   );
 }

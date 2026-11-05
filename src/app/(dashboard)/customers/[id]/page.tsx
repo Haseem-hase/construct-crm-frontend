@@ -301,6 +301,7 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
         id={displayCustomer.id}
         name={displayCustomer.name} 
         code={displayCustomer.customerCode} 
+        profileImageUrl={displayCustomer.profileImageUrl}
         status={displayCustomer.isActive ? 'Active' : 'Inactive'} 
         onActivateToggle={() => setIsConfirmOpen(true)}
         onDelete={() => {

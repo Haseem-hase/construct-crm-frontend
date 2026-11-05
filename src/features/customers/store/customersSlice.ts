@@ -114,9 +114,10 @@ export const fetchCustomerChildren = createAsyncThunk(
 
 export const createCustomer = createAsyncThunk(
   'customers/createCustomer',
-  async (payload: CreateCustomerRequest, { rejectWithValue, dispatch }) => {
+  async (payload: CreateCustomerRequest & { image?: File }, { rejectWithValue, dispatch }) => {
     try {
-      const response = await customersApi.createCustomer(payload);
+      const { image, ...fields } = payload;
+      const response = await customersApi.createCustomer(fields, image);
       dispatch(fetchCustomers());
       return { customer: response.data.customer, message: response.message };
     } catch (err: any) {
@@ -127,9 +128,9 @@ export const createCustomer = createAsyncThunk(
 
 export const updateCustomer = createAsyncThunk(
   'customers/updateCustomer',
-  async ({ id, payload }: { id: string; payload: UpdateCustomerRequest }, { rejectWithValue, dispatch }) => {
+  async ({ id, payload, image }: { id: string; payload: UpdateCustomerRequest; image?: File }, { rejectWithValue, dispatch }) => {
     try {
-      const response = await customersApi.updateCustomer(id, payload);
+      const response = await customersApi.updateCustomer(id, payload, image);
       dispatch(fetchCustomers());
       return { customer: response.data.customer, message: response.message };
     } catch (err: any) {
