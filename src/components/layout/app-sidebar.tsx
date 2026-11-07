@@ -29,7 +29,17 @@ const sharedNavigation: NavItem[] = [
       { name: 'Labour Assignments', href: '/labour-assignments' }
     ]
   },
-  { name: 'Inventory', href: '/inventory', icon: ClipboardList },
+  {
+    name: 'Inventory',
+    icon: ClipboardList,
+    subItems: [
+      { name: 'Items', href: '/inventory' },
+      { name: 'Warehouses & stock', href: '/inventory/warehouses' },
+      { name: 'Stock requests', href: '/inventory/requests' },
+      { name: 'Returns & inspection', href: '/inventory/returns' },
+      { name: 'Damage & repairs', href: '/inventory/repairs' },
+    ],
+  },
 ];
 
 const otherNavigation: NavItem[] = [
@@ -125,7 +135,7 @@ export function AppSidebar() {
                   <ul className="mt-1 space-y-1 px-3">
                     {item.subItems!.map((sub) => {
                       const isSubActive = sub.href === '/inventory'
-                        ? pathname === sub.href
+                        ? pathname === sub.href || pathname?.startsWith('/inventory/') && !['/inventory/warehouses', '/inventory/requests', '/inventory/returns', '/inventory/repairs'].some(path => pathname.startsWith(path))
                         : pathname?.startsWith(sub.href) || false;
                       return (
                         <li key={sub.name}>
