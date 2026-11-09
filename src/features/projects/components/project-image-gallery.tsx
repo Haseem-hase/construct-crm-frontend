@@ -10,15 +10,16 @@ interface ProjectImageGalleryProps {
 }
 
 export function ProjectImageGallery({ images }: ProjectImageGalleryProps) {
+  const [kind, setKind] = useState<'DESIGN' | 'SITE'>('DESIGN');
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
   if (!images || images.length === 0) return null;
 
   // For the gallery view, we might want to exclude the cover if it's already displayed huge at the top.
   // But let's show all of them (or non-cover ones) depending on design. We'll show all here for a complete gallery.
-  const galleryImages = images.filter(img => !img.isCover);
+  const galleryImages = images.filter(img => (img.kind || 'DESIGN') === kind);
   
-  if (galleryImages.length === 0) return null;
+
 
   const maxVisible = 4;
   const visibleImages = galleryImages.slice(0, maxVisible);
@@ -41,7 +42,9 @@ export function ProjectImageGallery({ images }: ProjectImageGalleryProps) {
   return (
     <>
       <div className="w-full">
-        <h3 className="text-lg font-semibold tracking-tight text-neutral-900 mb-4">Project Gallery</h3>
+        <h3 className="text-lg font-semibold tracking-tight text-neutral-900 mb-4">Designs &amp; Site Photos</h3>
+        <div className="mb-4 flex flex-wrap gap-2">{(['DESIGN', 'SITE'] as const).map(value => <Button key={value} variant={kind === value ? 'primary' : 'outline'} aria-pressed={kind === value} onClick={() => { setKind(value); setSelectedImageIndex(null); }}>{value === 'DESIGN' ? 'Design previews' : 'Site visit photos'} ({images.filter(image => (image.kind || 'DESIGN') === value).length})</Button>)}</div>
+        {galleryImages.length === 0 && <p className="rounded-xl border border-dashed border-neutral-200 p-6 text-sm text-neutral-500">No {kind === 'DESIGN' ? 'design previews' : 'site visit photos'} added yet.</p>}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {visibleImages.map((img, index) => (
             <div 
@@ -57,6 +60,7 @@ export function ProjectImageGallery({ images }: ProjectImageGalleryProps) {
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
               
+              {kind === 'SITE' && <div className="absolute inset-x-0 bottom-0 bg-black/70 p-2 text-xs text-white"><p>{img.visitedAt || 'Visit date not recorded'} · {img.siteStage?.replaceAll('_', ' ').toLowerCase() || 'Stage not recorded'}</p></div>}
               {/* Overlay for remaining images indicator */}
               {index === maxVisible - 1 && hiddenCount > 0 && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-[2px]">
@@ -115,7 +119,7 @@ export function ProjectImageGallery({ images }: ProjectImageGalleryProps) {
             {galleryImages[selectedImageIndex].alt && (
               <div className="absolute bottom-4 left-0 right-0 text-center">
                 <span className="bg-black/60 text-white text-sm py-1.5 px-4 rounded-full backdrop-blur-md">
-                  {galleryImages[selectedImageIndex].alt}
+                  {kind === 'SITE' ? [galleryImages[selectedImageIndex].visitedAt, galleryImages[selectedImageIndex].siteStage?.replaceAll('_', ' '), galleryImages[selectedImageIndex].notes].filter(Boolean).join(' · ') || galleryImages[selectedImageIndex].alt : galleryImages[selectedImageIndex].alt}
                 </span>
               </div>
             )}

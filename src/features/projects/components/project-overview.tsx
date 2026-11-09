@@ -82,6 +82,10 @@ export function ProjectOverview({ project, onUpdate }: ProjectOverviewProps) {
             />
           </DetailItem>
 
+          <DetailItem label="Site area (sq ft)">
+            {project.areaSqFt == null ? <span className="text-neutral-400">Not provided</span> : Number(project.areaSqFt).toLocaleString()}
+          </DetailItem>
+
           <DetailItem label="Created Date">
             {formatDate(project.createdAt)}
           </DetailItem>

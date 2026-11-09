@@ -20,6 +20,7 @@ import { ProjectLabourOverview } from '@/src/features/projects/components/projec
 import { assignmentsApi, ApiContractorAssignment } from '@/src/features/assignments/api/assignments.api';
 import { labourAssignmentsApi, ApiLabourAssignment } from '@/src/features/labour-assignments/api/labour-assignments.api';
 import { projectImageUrl } from '@/src/features/projects/utils/project-image';
+import { ProjectImageUploader } from '@/src/features/projects/components/project-image-uploader';
 import { ProjectImageGallery } from '@/src/features/projects/components/project-image-gallery';
 import { useAuth } from '@/src/features/auth/context/use-auth';
 
@@ -40,6 +41,7 @@ export default function ProjectDetailsPage({ params }: ProjectDetailsPageProps) 
   const [labourAssignments, setLabourAssignments] = useState<ApiLabourAssignment[]>([]);
   const [relationshipsLoading, setRelationshipsLoading] = useState(false);
   const [relationshipsError, setRelationshipsError] = useState('');
+  const [addingImages, setAddingImages] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const loadProject = () => { void dispatch(fetchProjectById(id)); };
@@ -63,10 +65,10 @@ export default function ProjectDetailsPage({ params }: ProjectDetailsPageProps) 
     const primary = apiProject.projectCustomers?.find((relation) => relation.isPrimary) || apiProject.projectCustomers?.[0];
     const resolvedImageUrl = projectImageUrl(apiProject.imageUrl);
     const images = apiProject.images?.length
-      ? apiProject.images.map(image => ({ id: image.id, url: projectImageUrl(image.imageUrl) || image.imageUrl, alt: image.alt || apiProject.name, isCover: image.isCover, isPersisted: true }))
+      ? apiProject.images.map(image => ({ kind: image.kind, visitedAt: image.visitedAt?.slice(0, 10), siteStage: image.siteStage, areaSqFt: image.areaSqFt == null ? null : Number(image.areaSqFt), notes: image.notes, id: image.id, url: projectImageUrl(image.imageUrl) || image.imageUrl, alt: image.alt || apiProject.name, isCover: image.isCover, isPersisted: true }))
       : resolvedImageUrl ? [{ id: apiProject.id, url: resolvedImageUrl, alt: apiProject.name, isCover: true, isPersisted: false }] : [];
     const coverImageUrl = images.find(image => image.isCover)?.url || resolvedImageUrl;
-    return { id: apiProject.id, projectCode: apiProject.projectCode, name: apiProject.name, customerId: primary?.customerId || '', customerName: primary?.customer?.name || 'No customer', customerCode: primary?.customer?.customerCode, customerType: primary?.customer?.type, projectCustomerRelationId: primary?.id, projectCustomerRelations: apiProject.projectCustomers?.map(({ id, customerId }) => ({ id, customerId })) || [], status: fromApiStatus[apiProject.status], progress: apiProject.progress, startDate: apiProject.plannedStartDate || '', plannedEndDate: apiProject.plannedEndDate || '', description: apiProject.description || undefined, budget: apiProject.budget ?? undefined, imageUrl: coverImageUrl || undefined, images, createdAt: apiProject.createdAt };
+    return { id: apiProject.id, projectCode: apiProject.projectCode, name: apiProject.name, customerId: primary?.customerId || '', customerName: primary?.customer?.name || 'No customer', customerCode: primary?.customer?.customerCode, customerType: primary?.customer?.type, projectCustomerRelationId: primary?.id, projectCustomerRelations: apiProject.projectCustomers?.map(({ id, customerId }) => ({ id, customerId })) || [], status: fromApiStatus[apiProject.status], progress: apiProject.progress, startDate: apiProject.plannedStartDate || '', plannedEndDate: apiProject.plannedEndDate || '', description: apiProject.description || undefined, budget: apiProject.budget ?? undefined, areaSqFt: apiProject.areaSqFt == null ? null : Number(apiProject.areaSqFt), imageUrl: coverImageUrl || undefined, images, createdAt: apiProject.createdAt };
   }, [apiProject]);
 
   const saveInline = async (updates: Partial<Project>) => {
@@ -106,7 +108,11 @@ export default function ProjectDetailsPage({ params }: ProjectDetailsPageProps) 
       <ProjectDetailsHeader project={project} onStatusChange={async (status) => { const saved = await saveInline({ status }); if (!saved) throw new Error('Unable to update project status.'); }} />
       <div className="flex flex-col gap-8">
         {project.imageUrl && <div className="w-full aspect-[21/9] sm:aspect-[3/1] rounded-2xl overflow-hidden ring-1 ring-neutral-200/60 shadow-sm relative">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={project.imageUrl} alt={`${project.name} project`} className="w-full h-full object-cover" /></div>}
-        <ProjectImageGallery images={project.images} />
+        <section className="space-y-4" aria-label="Project images">
+          {!readOnly && <div className="flex justify-end"><Button variant="outline" onClick={() => setAddingImages(value => !value)} aria-expanded={addingImages}>{addingImages ? 'Close image uploader' : '+ Add images'}</Button></div>}
+          {!readOnly && addingImages && <ProjectImageUploader key={id} projectId={id} onSaved={() => { setAddingImages(false); setShowSuccess(true); setTimeout(() => setShowSuccess(false), 2800); }} />}
+          <ProjectImageGallery images={project.images} />
+        </section>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 flex flex-col gap-6"><ProjectOverview project={project} onUpdate={saveInline} /><ProjectPlanning project={project} onUpdate={saveInline} /></div>
           <div className="flex flex-col gap-6"><ProjectCustomer project={project} onUpdate={saveInline} /><ProjectFinancials project={project} onUpdate={saveInline} /></div>

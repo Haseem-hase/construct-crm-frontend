@@ -1,6 +1,14 @@
 export type ProjectStatus = 'Planning' | 'Active' | 'Completed' | 'On Hold' | 'Cancelled';
 
-export interface ProjectImage {
+export interface ProjectImageDetails {
+  kind?: 'DESIGN' | 'SITE';
+  visitedAt?: string | null;
+  siteStage?: 'BEFORE_WORK' | 'IN_PROGRESS' | 'COMPLETED' | null;
+  areaSqFt?: number | null;
+  notes?: string | null;
+}
+
+export interface ProjectImage extends ProjectImageDetails {
   id: string;
   url: string;
   alt?: string;
@@ -26,6 +34,7 @@ export interface Project {
   plannedEndDate: string;
   description?: string;
   budget?: number | null;
+  areaSqFt?: number | null;
   images?: ProjectImage[];
   imageUrl?: string;
   createdAt: string;
