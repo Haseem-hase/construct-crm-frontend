@@ -15,10 +15,8 @@ import { Pagination } from '@/src/components/ui/pagination';
 import { Dialog } from '@/src/components/ui/dialog';
 import { ConfirmationDialog } from '@/src/components/ui/confirmation-dialog';
 import { InventoryAsset, InventoryAssetType, InventoryConditionReport, InventoryRequest, InventoryReturnRequest } from '@/src/features/inventory/types/inventory.types';
-import { inventoryApi } from '@/src/features/inventory/api/inventory.api';
+import { inventoryApi, type InventoryRequestOptions } from '@/src/features/inventory/api/inventory.api';
 import type { InventoryWarehouse, WarehouseStock } from '@/src/features/inventory/types/inventory.types';
-import { projectsApi, ApiProject } from '@/src/features/projects/api/projects.api';
-import { labourAssignmentsApi, ApiLabourAssignment } from '@/src/features/labour-assignments/api/labour-assignments.api';
 import { InventoryError, InventoryLoading } from '@/src/features/inventory/components/inventory-ui';
 import { inventoryImageUrl } from '@/src/features/inventory/utils/inventory-image';
 
@@ -48,8 +46,8 @@ export function InventoryWorkspace({ section }: { section: InventorySection }) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<InventoryAsset | null>(null);
   const [warehouses, setWarehouses] = useState<InventoryWarehouse[]>([]);
-  const [projects, setProjects] = useState<ApiProject[]>([]);
-  const [labourAssignments, setLabourAssignments] = useState<ApiLabourAssignment[]>([]);
+  const [projects, setProjects] = useState<InventoryRequestOptions['projects']>([]);
+  const [labourAssignments, setLabourAssignments] = useState<InventoryRequestOptions['labourAssignments']>([]);
   const [warehouseId, setWarehouseId] = useState('');
   const [warehouseStock, setWarehouseStock] = useState<WarehouseStock[]>([]);
   const [warehouseDialogOpen, setWarehouseDialogOpen] = useState(false);
@@ -101,11 +99,11 @@ export function InventoryWorkspace({ section }: { section: InventorySection }) {
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
     let active = true;
-    Promise.all([inventoryApi.warehouses(), section === 'items' ? projectsApi.list().catch(() => []) : Promise.resolve([]), section === 'items' ? labourAssignmentsApi.list().catch(() => []) : Promise.resolve([])]).then(([warehouseRows, projectRows, labourRows]) => {
+    Promise.all([inventoryApi.warehouses(), section === 'items' || section === 'warehouses' ? inventoryApi.requestOptions() : Promise.resolve({ projects: [], labourAssignments: [] })]).then(([warehouseRows, options]) => {
       if (!active) return;
       setWarehouses(warehouseRows);
-      setProjects(projectRows);
-      setLabourAssignments(labourRows);
+      setProjects(options.projects);
+      setLabourAssignments(options.labourAssignments);
       setWarehouseId(current => current || warehouseRows.find(row => row.isDefault)?.id || warehouseRows[0]?.id || '');
     }).catch(e => { if (active) setError(errorMessage(e)); });
     return () => { active = false; };

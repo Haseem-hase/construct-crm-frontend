@@ -45,7 +45,15 @@ const assetPayload = (payload: InventoryAssetInput) => {
   return formData;
 };
 
+export type InventoryRequestOptions = {
+  projects: Array<{ id: string; name: string; projectCode: string }>;
+  labourAssignments: Array<{ id: string; status: 'ACTIVE'; labour: { fullName: string }; assignment: { project: { id: string }; contractor: { fullName: string } } }>;
+};
+
 export const inventoryApi = {
+  async requestOptions() {
+    return (await apiClient.get<ApiEnvelope<{ options: InventoryRequestOptions }>>('/inventory/request-options')).data.data.options;
+  },
   async asset(id: string) {
     return (await apiClient.get<ApiEnvelope<{ asset: InventoryAsset }>>(`/inventory/assets/${id}`)).data.data.asset;
   },
