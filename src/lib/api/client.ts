@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios';
-import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './token';
+import { getAccessToken, getRefreshToken, setTokens, clearTokens, isTokenExpired } from './token';
 import { authApi } from '../../features/auth/api/auth-api';
 
 export interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
@@ -48,6 +48,13 @@ export function invalidatePendingAuthRefreshes() {
   activeRefreshGeneration = null;
 }
 
+/** Clear credentials and pending refresh work before notifying the auth UI. */
+export function expireSession() {
+  invalidatePendingAuthRefreshes();
+  clearTokens();
+  notifySessionExpired();
+}
+
 apiClient.interceptors.request.use(
   (config: CustomAxiosRequestConfig) => {
     config._authGeneration = authSessionGeneration;
@@ -94,8 +101,7 @@ apiClient.interceptors.response.use(
     }
 
     if (error.response?.status === 401 && originalRequest._retry) {
-      clearTokens();
-      notifySessionExpired();
+      expireSession();
       return Promise.reject(error);
     }
 
@@ -103,9 +109,8 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       const refreshToken = getRefreshToken();
-      if (!refreshToken) {
-        clearTokens();
-        notifySessionExpired();
+      if (!refreshToken || isTokenExpired(refreshToken)) {
+        expireSession();
         return Promise.reject(error);
       }
 
@@ -157,8 +162,7 @@ apiClient.interceptors.response.use(
           onRefreshFailed(refreshError);
           const refreshWasRejected = axios.isAxiosError(refreshError) && refreshError.response?.status === 401;
           if (refreshWasRejected) {
-            clearTokens();
-            notifySessionExpired();
+            expireSession();
           }
         }
         return Promise.reject(refreshError);

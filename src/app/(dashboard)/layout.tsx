@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AppShell } from '@/src/components/layout/app-shell';
 import { useAuth } from '@/src/features/auth/context/use-auth';
+import { LoginForm } from '@/src/features/auth/components/login-form';
 
 export default function DashboardLayout({
   children,
@@ -24,8 +25,21 @@ export default function DashboardLayout({
     else if (shouldDenySuperAdminRoute) router.replace('/dashboard');
   }, [isAuthenticated, isLoading, router, shouldDenySuperAdminRoute, shouldRedirectSuperAdmin]);
 
-  if (isLoading || !isAuthenticated || shouldRedirectSuperAdmin || shouldDenySuperAdminRoute) {
-    return <div className="min-h-screen bg-neutral-50" aria-busy="true" />;
+  // Show login immediately while Next loads the /login route in development.
+  if (!isLoading && !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-50/50">
+        <LoginForm />
+      </div>
+    );
+  }
+
+  if (isLoading || shouldRedirectSuperAdmin || shouldDenySuperAdminRoute) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50" role="status" aria-busy="true">
+        <p className="text-sm text-neutral-500">Checking your session…</p>
+      </div>
+    );
   }
 
   return <AppShell>{children}</AppShell>;

@@ -1,5 +1,28 @@
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
+export const TOKENS_CHANGED_EVENT = 'constructcrm:tokens-changed';
+
+/** Read expiry for UI scheduling only. The API still verifies JWT signatures. */
+export function getTokenExpiresAt(token: string): number | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof payload.exp === 'number' && Number.isFinite(payload.exp)
+      && Number.isFinite(payload.exp * 1000) ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isTokenExpired(token: string, now = Date.now()): boolean {
+  const expiresAt = getTokenExpiresAt(token);
+  return expiresAt === null || expiresAt <= now;
+}
+
+function notifyTokensChanged(): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(TOKENS_CHANGED_EVENT));
+}
 
 function isBrowser(): boolean {
   return typeof document !== 'undefined';
@@ -30,6 +53,7 @@ export function getAccessToken(): string | null {
 
 export function setAccessToken(token: string): void {
   setCookie(ACCESS_TOKEN_KEY, token);
+  notifyTokensChanged();
 }
 
 export function getRefreshToken(): string | null {
@@ -38,14 +62,17 @@ export function getRefreshToken(): string | null {
 
 export function setRefreshToken(token: string): void {
   setCookie(REFRESH_TOKEN_KEY, token);
+  notifyTokensChanged();
 }
 
 export function setTokens(accessToken: string, refreshToken: string): void {
   setCookie(ACCESS_TOKEN_KEY, accessToken);
   setCookie(REFRESH_TOKEN_KEY, refreshToken);
+  notifyTokensChanged();
 }
 
 export function clearTokens(): void {
   removeCookie(ACCESS_TOKEN_KEY);
   removeCookie(REFRESH_TOKEN_KEY);
+  notifyTokensChanged();
 }
